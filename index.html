@@ -8,8 +8,6 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div id="root"></div>
@@ -119,47 +117,18 @@
         document.body.style.userSelect = 'auto';
       }, []);
 
-      const iframeRef = useRef(null);
-
-      const handleDownloadPDF = useCallback(async () => {
-        if (!iframeRef.current) return;
-
-        try {
-          const iframe = iframeRef.current;
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-          const body = iframeDoc.body;
-
-          // html2canvasでキャプチャ
-          const canvas = await html2canvas(body, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff'
-          });
-
-          // jsPDFでPDF生成
-          const { jsPDF } = window.jspdf;
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-
-          // A4サイズに合わせる
-          const pdfWidth = 210;
-          const pdfHeight = (imgHeight * pdfWidth) / imgWidth;
-
-          const pdf = new jsPDF({
-            orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
-            unit: 'mm',
-            format: 'a4'
-          });
-
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-          pdf.save('preview.pdf');
-        } catch (error) {
-          console.error('PDF generation failed:', error);
-          alert('PDF生成に失敗しました。');
-        }
-      }, []);
+      const handleDownload = useCallback(() => {
+        const isSvg = currentMode === 'SVG';
+        const blob = new Blob([code], { type: isSvg ? 'image/svg+xml' : 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = isSvg ? 'preview.svg' : 'preview.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, [code, currentMode]);
 
       return (
         <div
@@ -236,13 +205,13 @@
                 <span>プレビュー</span>
                 <div className="flex gap-2">
                   <button
-                    onClick={handleDownloadPDF}
+                    onClick={handleDownload}
                     className="px-3 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded transition flex items-center gap-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    PDF
+                    ダウンロード
                   </button>
                   <button
                     onClick={() => setIsPreviewMaximized(!isPreviewMaximized)}
@@ -268,11 +237,10 @@
               </div>
               <div className="flex-1 bg-white">
                 <iframe
-                  ref={iframeRef}
                   srcDoc={previewCode}
                   title="Preview"
                   className="w-full h-full border-0"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts"
                 />
               </div>
             </div>
