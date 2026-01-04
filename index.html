@@ -264,6 +264,12 @@
                   autoCapitalize="off"
                   autoCorrect="off"
                 />
+              ) : currentMode === 'SVG' ? (
+                <div
+                  className="w-full h-full bg-gray-100 overflow-auto flex items-center justify-center p-4"
+                  style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                  dangerouslySetInnerHTML={{ __html: code.trim() }}
+                />
               ) : (
                 <iframe
                   srcDoc={previewCode}
