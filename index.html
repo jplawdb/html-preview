@@ -251,44 +251,18 @@
           String(now.getMonth() + 1).padStart(2, '0') +
           String(now.getDate()).padStart(2, '0');
 
-        // メインタイトル（最大フォントサイズのテキスト）を取得
+        // メインタイトルを取得（<!--メインタイトル-->コメントの直後のテキスト）
         let title = '';
         if (isSvg) {
           try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(code.trim(), 'image/svg+xml');
+            // 正規表現で <!--メインタイトル--> の直後のテキスト要素を探す
+            const match = code.match(/<!--\s*メインタイトル\s*-->\s*<text[^>]*>([^<]+)<\/text>/);
+            if (match && match[1]) {
+              title = match[1].trim();
+            }
 
-            // テキスト要素からフォントサイズを取得して最大のものを探す
-            const textElements = doc.querySelectorAll('text');
-            let maxFontSize = 0;
-            let mainTitle = '';
-
-            textElements.forEach(text => {
-              const content = text.textContent?.trim();
-              if (!content) return;
-
-              // font-size を取得（属性 or style）
-              let fontSize = 0;
-              const fontSizeAttr = text.getAttribute('font-size');
-              const style = text.getAttribute('style') || '';
-              const styleMatch = style.match(/font-size:\s*(\d+)/);
-
-              if (fontSizeAttr) {
-                fontSize = parseFloat(fontSizeAttr) || 0;
-              } else if (styleMatch) {
-                fontSize = parseFloat(styleMatch[1]) || 0;
-              }
-
-              if (fontSize > maxFontSize) {
-                maxFontSize = fontSize;
-                mainTitle = content;
-              }
-            });
-
-            // フォントサイズで見つからなければ最初のテキスト
-            if (mainTitle) {
-              title = mainTitle;
-            } else {
+            // 見つからなければ最初のテキスト要素
+            if (!title) {
               const texts = extractSvgTexts(code.trim());
               if (texts.length > 0) {
                 title = texts[0];
