@@ -76,67 +76,20 @@
         return () => window.removeEventListener('resize', checkMobile);
       }, []);
 
-      // SVGのtext要素をforeignObjectに変換して選択可能にする
-      const convertSvgTextToForeignObject = (svgString) => {
+      // SVGからテキストを抽出
+      const extractSvgTexts = (svgString) => {
         try {
           const parser = new DOMParser();
           const doc = parser.parseFromString(svgString, 'image/svg+xml');
-          const svg = doc.querySelector('svg');
-          if (!svg) return svgString;
-
-          // すべてのtext要素を変換
-          const textElements = svg.querySelectorAll('text');
+          const textElements = doc.querySelectorAll('text');
+          const texts = [];
           textElements.forEach(text => {
-            const x = text.getAttribute('x') || '0';
-            const y = text.getAttribute('y') || '0';
-            const fill = text.getAttribute('fill') || 'black';
-            const fontSize = text.getAttribute('font-size') || '16';
-            const fontFamily = text.getAttribute('font-family') || 'sans-serif';
-            const fontWeight = text.getAttribute('font-weight') || 'normal';
-            const textAnchor = text.getAttribute('text-anchor') || 'start';
-            const textContent = text.textContent || '';
-
-            // foreignObjectを作成
-            const fo = doc.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-            const foWidth = Math.max(textContent.length * parseInt(fontSize) * 0.8, 200);
-            const foHeight = parseInt(fontSize) * 2;
-
-            // text-anchorに応じてx位置を調整
-            let adjustedX = parseFloat(x);
-            if (textAnchor === 'middle') {
-              adjustedX -= foWidth / 2;
-            } else if (textAnchor === 'end') {
-              adjustedX -= foWidth;
-            }
-
-            fo.setAttribute('x', adjustedX);
-            fo.setAttribute('y', parseFloat(y) - parseInt(fontSize));
-            fo.setAttribute('width', foWidth);
-            fo.setAttribute('height', foHeight);
-
-            // HTML div を作成
-            const div = doc.createElementNS('http://www.w3.org/1999/xhtml', 'div');
-            div.setAttribute('style', `
-              color: ${fill};
-              font-size: ${fontSize}px;
-              font-family: ${fontFamily};
-              font-weight: ${fontWeight};
-              text-align: ${textAnchor === 'middle' ? 'center' : textAnchor === 'end' ? 'right' : 'left'};
-              user-select: text;
-              -webkit-user-select: text;
-              cursor: text;
-              white-space: nowrap;
-            `.trim());
-            div.textContent = textContent;
-
-            fo.appendChild(div);
-            text.parentNode.replaceChild(fo, text);
+            const content = text.textContent?.trim();
+            if (content) texts.push(content);
           });
-
-          return new XMLSerializer().serializeToString(doc);
+          return texts.join('\n');
         } catch (e) {
-          console.error('SVG conversion error:', e);
-          return svgString;
+          return '';
         }
       };
 
@@ -146,7 +99,6 @@
         const isSvg = trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
 
         if (isSvg) {
-          const convertedSvg = convertSvgTextToForeignObject(trimmed);
           return `<!DOCTYPE html>
 <html>
 <head>
@@ -166,7 +118,7 @@
   </style>
 </head>
 <body>
-  ${convertedSvg}
+  ${trimmed}
 </body>
 </html>`;
         }
@@ -324,11 +276,23 @@
                   autoCorrect="off"
                 />
               ) : currentMode === 'SVG' ? (
-                <div
-                  className="w-full h-full bg-gray-100 overflow-auto flex items-center justify-center p-4"
-                  style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-                  dangerouslySetInnerHTML={{ __html: convertSvgTextToForeignObject(code.trim()) }}
-                />
+                <div className="w-full h-full bg-gray-100 overflow-auto relative">
+                  {/* SVG表示 */}
+                  <div
+                    className="w-full h-full flex items-center justify-center p-4"
+                    dangerouslySetInnerHTML={{ __html: code.trim() }}
+                  />
+                  {/* テキスト選択用オーバーレイ */}
+                  <div
+                    className="absolute top-0 left-0 w-full p-4 bg-white/90 border-b border-gray-300"
+                    style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                  >
+                    <div className="text-xs text-gray-500 mb-1">テキスト（選択・コピー可）:</div>
+                    <div className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+                      {extractSvgTexts(code.trim()) || '(テキストなし)'}
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <iframe
                   srcDoc={previewCode}
