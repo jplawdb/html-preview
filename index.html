@@ -155,7 +155,7 @@
       // SVGかどうかを判定し、必要ならHTMLでラップ
       const previewCode = useMemo(() => {
         const trimmed = code.trim();
-        const isSvg = trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
+        const isSvg = trimmed.includes('<svg') || trimmed.startsWith('<?xml');
 
         if (isSvg) {
           return `<!DOCTYPE html>
@@ -184,10 +184,10 @@
         return code;
       }, [code]);
 
-      // 現在のモードを判定
+      // 現在のモードを判定（SVGタグがあればSVG）
       const currentMode = useMemo(() => {
         const trimmed = code.trim();
-        if (trimmed.startsWith('<svg') || trimmed.startsWith('<?xml')) {
+        if (trimmed.includes('<svg') || trimmed.startsWith('<?xml')) {
           return 'SVG';
         }
         return 'HTML';
