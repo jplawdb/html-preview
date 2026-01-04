@@ -76,12 +76,77 @@
         return () => window.removeEventListener('resize', checkMobile);
       }, []);
 
+      // SVGのtext要素をforeignObjectに変換して選択可能にする
+      const convertSvgTextToForeignObject = (svgString) => {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svgString, 'image/svg+xml');
+          const svg = doc.querySelector('svg');
+          if (!svg) return svgString;
+
+          // すべてのtext要素を変換
+          const textElements = svg.querySelectorAll('text');
+          textElements.forEach(text => {
+            const x = text.getAttribute('x') || '0';
+            const y = text.getAttribute('y') || '0';
+            const fill = text.getAttribute('fill') || 'black';
+            const fontSize = text.getAttribute('font-size') || '16';
+            const fontFamily = text.getAttribute('font-family') || 'sans-serif';
+            const fontWeight = text.getAttribute('font-weight') || 'normal';
+            const textAnchor = text.getAttribute('text-anchor') || 'start';
+            const textContent = text.textContent || '';
+
+            // foreignObjectを作成
+            const fo = doc.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+            const foWidth = Math.max(textContent.length * parseInt(fontSize) * 0.8, 200);
+            const foHeight = parseInt(fontSize) * 2;
+
+            // text-anchorに応じてx位置を調整
+            let adjustedX = parseFloat(x);
+            if (textAnchor === 'middle') {
+              adjustedX -= foWidth / 2;
+            } else if (textAnchor === 'end') {
+              adjustedX -= foWidth;
+            }
+
+            fo.setAttribute('x', adjustedX);
+            fo.setAttribute('y', parseFloat(y) - parseInt(fontSize));
+            fo.setAttribute('width', foWidth);
+            fo.setAttribute('height', foHeight);
+
+            // HTML div を作成
+            const div = doc.createElementNS('http://www.w3.org/1999/xhtml', 'div');
+            div.setAttribute('style', `
+              color: ${fill};
+              font-size: ${fontSize}px;
+              font-family: ${fontFamily};
+              font-weight: ${fontWeight};
+              text-align: ${textAnchor === 'middle' ? 'center' : textAnchor === 'end' ? 'right' : 'left'};
+              user-select: text;
+              -webkit-user-select: text;
+              cursor: text;
+              white-space: nowrap;
+            `.trim());
+            div.textContent = textContent;
+
+            fo.appendChild(div);
+            text.parentNode.replaceChild(fo, text);
+          });
+
+          return new XMLSerializer().serializeToString(doc);
+        } catch (e) {
+          console.error('SVG conversion error:', e);
+          return svgString;
+        }
+      };
+
       // SVGかどうかを判定し、必要ならHTMLでラップ
       const previewCode = useMemo(() => {
         const trimmed = code.trim();
         const isSvg = trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
 
         if (isSvg) {
+          const convertedSvg = convertSvgTextToForeignObject(trimmed);
           return `<!DOCTYPE html>
 <html>
 <head>
@@ -98,16 +163,10 @@
       max-width: 100%;
       max-height: 100vh;
     }
-    /* SVGテキストを選択可能にする */
-    svg text, svg tspan {
-      user-select: text;
-      -webkit-user-select: text;
-      cursor: text;
-    }
   </style>
 </head>
 <body>
-  ${trimmed}
+  ${convertedSvg}
 </body>
 </html>`;
         }
@@ -268,7 +327,7 @@
                 <div
                   className="w-full h-full bg-gray-100 overflow-auto flex items-center justify-center p-4"
                   style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-                  dangerouslySetInnerHTML={{ __html: code.trim() }}
+                  dangerouslySetInnerHTML={{ __html: convertSvgTextToForeignObject(code.trim()) }}
                 />
               ) : (
                 <iframe
