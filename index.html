@@ -63,6 +63,7 @@
       const [leftPanelWidth, setLeftPanelWidth] = useState(50);
       const [activeTab, setActiveTab] = useState('code'); // モバイル用タブ
       const [isMobile, setIsMobile] = useState(false);
+      const [savedItems, setSavedItems] = useState([]);
       const containerRef = useRef(null);
       const isDragging = useRef(false);
 
@@ -74,6 +75,66 @@
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
+      }, []);
+
+      // LocalStorageから読み込み
+      useEffect(() => {
+        try {
+          const saved = localStorage.getItem('html-preview-library');
+          if (saved) {
+            setSavedItems(JSON.parse(saved));
+          }
+        } catch (e) {
+          console.error('Failed to load from localStorage:', e);
+        }
+      }, []);
+
+      // 登録機能
+      const handleSave = useCallback(() => {
+        if (!code.trim()) return;
+
+        const isSvg = code.includes('<svg');
+        let title = '';
+
+        // タイトル取得
+        if (isSvg) {
+          const match = code.match(/<!--\s*メインタイトル\s*-->[\s\S]*?<text[^>]*>([^<]+)<\/text>/);
+          if (match && match[1]) {
+            title = match[1].trim();
+          }
+          if (!title) {
+            const texts = extractSvgTexts(code.trim());
+            if (texts.length > 0) title = texts[0];
+          }
+        }
+        title = title.slice(0, 30).replace(/[\/\\:*?"<>|\n\r]/g, '').trim() || (isSvg ? 'SVG' : 'HTML');
+
+        const newItem = {
+          id: Date.now(),
+          title,
+          type: isSvg ? 'SVG' : 'HTML',
+          code: isSvg ? extractSvgTag(code.trim()) : code,
+          createdAt: new Date().toISOString()
+        };
+
+        const updated = [newItem, ...savedItems];
+        setSavedItems(updated);
+        localStorage.setItem('html-preview-library', JSON.stringify(updated));
+        alert('登録しました！');
+      }, [code, savedItems]);
+
+      // 削除機能
+      const handleDelete = useCallback((id) => {
+        if (!confirm('削除しますか？')) return;
+        const updated = savedItems.filter(item => item.id !== id);
+        setSavedItems(updated);
+        localStorage.setItem('html-preview-library', JSON.stringify(updated));
+      }, [savedItems]);
+
+      // 読み込み機能
+      const handleLoad = useCallback((item) => {
+        setCode(item.code);
+        setActiveTab('preview');
       }, []);
 
 
@@ -264,6 +325,15 @@
                   </svg>
                 </button>
                 <button
+                  onClick={handleSave}
+                  className="p-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition active:scale-95"
+                  title="登録"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                </button>
+                <button
                   onClick={handleDownload}
                   className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition active:scale-95"
                   title="ダウンロード"
@@ -308,6 +378,24 @@
                   プレビュー
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab('library')}
+                className={`flex-1 py-3 text-sm font-medium transition ${
+                  activeTab === 'library'
+                    ? 'text-yellow-400 border-b-2 border-yellow-400 bg-gray-900'
+                    : 'text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  ライブラリ
+                  {savedItems.length > 0 && (
+                    <span className="bg-yellow-600 text-white text-xs px-1.5 rounded-full">{savedItems.length}</span>
+                  )}
+                </span>
+              </button>
             </div>
 
             {/* コンテンツ */}
@@ -322,6 +410,52 @@
                   autoCapitalize="off"
                   autoCorrect="off"
                 />
+              ) : activeTab === 'library' ? (
+                <div className="w-full h-full bg-gray-950 overflow-auto p-4">
+                  {savedItems.length === 0 ? (
+                    <div className="text-gray-500 text-center py-8">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                      <p>まだ登録がありません</p>
+                      <p className="text-sm mt-1">コードを入力して登録ボタンを押してね</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {savedItems.map(item => (
+                        <div
+                          key={item.id}
+                          className="bg-gray-800 rounded-lg p-3 flex items-center justify-between"
+                        >
+                          <div
+                            className="flex-1 cursor-pointer"
+                            onClick={() => handleLoad(item)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+                                item.type === 'SVG' ? 'bg-purple-600' : 'bg-blue-600'
+                              } text-white`}>
+                                {item.type}
+                              </span>
+                              <span className="text-white font-medium truncate">{item.title}</span>
+                            </div>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {new Date(item.createdAt).toLocaleDateString('ja-JP')}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-2 text-gray-500 hover:text-red-400 transition"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : currentMode === 'SVG' ? (
                 <div
                   className="w-full h-full bg-gray-100 overflow-auto flex items-center justify-center p-4"
