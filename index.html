@@ -245,32 +245,39 @@
         });
         const url = URL.createObjectURL(blob);
 
-        // タイムスタンプ生成 (YYYYMMDD_HHMMSS)
+        // タイムスタンプ生成 (YYYYMMDD)
         const now = new Date();
         const timestamp = now.getFullYear().toString() +
           String(now.getMonth() + 1).padStart(2, '0') +
-          String(now.getDate()).padStart(2, '0') + '_' +
-          String(now.getHours()).padStart(2, '0') +
-          String(now.getMinutes()).padStart(2, '0') +
-          String(now.getSeconds()).padStart(2, '0');
+          String(now.getDate()).padStart(2, '0');
 
-        // 内容から端的な名前を生成
-        let contentName = '';
+        // 表題を取得
+        let title = '';
         if (isSvg) {
-          const texts = extractSvgTexts(code.trim());
-          if (texts.length > 0) {
-            // 最初のテキストを使用（最大20文字、ファイル名に使えない文字を除去）
-            contentName = texts[0]
-              .slice(0, 20)
-              .replace(/[\/\\:*?"<>|]/g, '')
-              .trim();
-          }
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(code.trim(), 'image/svg+xml');
+            // 1. <title>要素を探す
+            const titleEl = doc.querySelector('title');
+            if (titleEl && titleEl.textContent?.trim()) {
+              title = titleEl.textContent.trim();
+            }
+            // 2. なければ最初のテキスト要素
+            if (!title) {
+              const texts = extractSvgTexts(code.trim());
+              if (texts.length > 0) {
+                title = texts[0];
+              }
+            }
+          } catch (e) {}
         }
-        if (!contentName) {
-          contentName = isSvg ? 'svg' : 'html';
-        }
+        // ファイル名に使えない文字を除去、最大30文字
+        title = title
+          .slice(0, 30)
+          .replace(/[\/\\:*?"<>|\n\r]/g, '')
+          .trim() || (isSvg ? 'svg' : 'html');
 
-        const filename = `${timestamp}_${contentName}.${isSvg ? 'svg' : 'html'}`;
+        const filename = `${timestamp}_${title}.${isSvg ? 'svg' : 'html'}`;
 
         const a = document.createElement('a');
         a.href = url;
