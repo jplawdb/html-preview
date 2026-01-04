@@ -255,8 +255,8 @@
         let title = '';
         if (isSvg) {
           try {
-            // 正規表現で <!--メインタイトル--> の直後のテキスト要素を探す
-            const match = code.match(/<!--\s*メインタイトル\s*-->\s*<text[^>]*>([^<]+)<\/text>/);
+            // 正規表現で <!-- メインタイトル --> の直後のテキスト要素を探す（改行・スペース対応）
+            const match = code.match(/<!--\s*メインタイトル\s*-->[\s\S]*?<text[^>]*>([^<]+)<\/text>/);
             if (match && match[1]) {
               title = match[1].trim();
             }
