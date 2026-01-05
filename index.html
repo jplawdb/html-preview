@@ -290,10 +290,17 @@
 
       // PNG変換ダウンロード（SVGのみ）
       const handleDownloadPng = useCallback(async () => {
-        if (currentMode !== 'SVG') return;
+        if (currentMode !== 'SVG') {
+          alert('SVGモードでのみ使用できます');
+          return;
+        }
 
         try {
           let svgContent = extractSvgTag(code.trim());
+          if (!svgContent) {
+            alert('SVGが見つかりません');
+            return;
+          }
 
           // SVGのサイズを取得
           const parser = new DOMParser();
@@ -366,12 +373,31 @@
             }
             title = title.slice(0, 30).replace(/[\/\\:*?"<>|\n\r]/g, '').trim() || 'svg';
 
-            const a = document.createElement('a');
-            a.href = pngUrl;
-            a.download = `${timestamp}_${title}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            // モバイルでは新しいタブで開く（長押し保存用）
+            if (isMobile) {
+              const newTab = window.open();
+              if (newTab) {
+                newTab.document.write(`
+                  <html>
+                  <head><title>${timestamp}_${title}.png</title></head>
+                  <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#333;">
+                    <img src="${pngUrl}" style="max-width:100%;max-height:100vh;" />
+                    <p style="position:fixed;bottom:20px;color:white;text-align:center;width:100%;">画像を長押しして保存してください</p>
+                  </body>
+                  </html>
+                `);
+                newTab.document.close();
+              } else {
+                alert('ポップアップがブロックされました。許可してください。');
+              }
+            } else {
+              const a = document.createElement('a');
+              a.href = pngUrl;
+              a.download = `${timestamp}_${title}.png`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }
           };
 
           img.onerror = (e) => {
