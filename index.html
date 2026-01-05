@@ -89,6 +89,28 @@
         }
       }, []);
 
+      // SVGタグを抽出
+      const extractSvgTag = (text) => {
+        const match = text.match(/<svg[\s\S]*<\/svg>/i);
+        return match ? match[0] : text;
+      };
+
+      // SVGからテキストを抽出（ファイル名用）
+      const extractSvgTexts = (svgString) => {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svgString, 'image/svg+xml');
+          const texts = [];
+          doc.querySelectorAll('text').forEach(text => {
+            const content = text.textContent?.trim();
+            if (content) texts.push(content);
+          });
+          return texts;
+        } catch (e) {
+          return [];
+        }
+      };
+
       // 登録機能
       const handleSave = useCallback(() => {
         if (!code.trim()) return;
@@ -139,29 +161,6 @@
         setCode(item.code);
         setActiveTab('preview');
       }, []);
-
-
-      // SVGタグを抽出
-      const extractSvgTag = (text) => {
-        const match = text.match(/<svg[\s\S]*<\/svg>/i);
-        return match ? match[0] : text;
-      };
-
-      // SVGからテキストを抽出（ファイル名用）
-      const extractSvgTexts = (svgString) => {
-        try {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(svgString, 'image/svg+xml');
-          const texts = [];
-          doc.querySelectorAll('text').forEach(text => {
-            const content = text.textContent?.trim();
-            if (content) texts.push(content);
-          });
-          return texts;
-        } catch (e) {
-          return [];
-        }
-      };
 
       // SVGかどうかを判定し、必要ならHTMLでラップ
       const previewCode = useMemo(() => {
