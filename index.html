@@ -293,19 +293,34 @@
         if (currentMode !== 'SVG') return;
 
         try {
-          const svgContent = extractSvgTag(code.trim());
+          let svgContent = extractSvgTag(code.trim());
 
           // SVGのサイズを取得
           const parser = new DOMParser();
           const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
           const svgEl = svgDoc.querySelector('svg');
 
-          let width = svgEl?.getAttribute('width') || svgEl?.viewBox?.baseVal?.width || 800;
-          let height = svgEl?.getAttribute('height') || svgEl?.viewBox?.baseVal?.height || 600;
+          if (!svgEl) {
+            alert('SVGの解析に失敗しました');
+            return;
+          }
 
-          // 数値に変換（pxなどの単位を除去）
-          width = parseInt(width) || 800;
-          height = parseInt(height) || 600;
+          // viewBoxからサイズ取得を試みる
+          let width, height;
+          const viewBox = svgEl.getAttribute('viewBox');
+          if (viewBox) {
+            const parts = viewBox.split(/\s+|,/).map(Number);
+            width = parts[2] || 800;
+            height = parts[3] || 600;
+          } else {
+            width = parseInt(svgEl.getAttribute('width')) || 800;
+            height = parseInt(svgEl.getAttribute('height')) || 600;
+          }
+
+          // SVGにwidth/height属性を確実に設定（モバイル対応）
+          svgEl.setAttribute('width', width);
+          svgEl.setAttribute('height', height);
+          svgContent = new XMLSerializer().serializeToString(svgEl);
 
           // 高解像度対応（2倍）
           const scale = 2;
@@ -321,14 +336,15 @@
           ctx.fillStyle = 'white';
           ctx.fillRect(0, 0, width, height);
 
+          // SVGをdata URLに変換（モバイル対応）
+          const svgBase64 = btoa(unescape(encodeURIComponent(svgContent)));
+          const dataUrl = `data:image/svg+xml;base64,${svgBase64}`;
+
           // SVGをImageとして読み込み
           const img = new Image();
-          const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-          const url = URL.createObjectURL(svgBlob);
 
           img.onload = () => {
             ctx.drawImage(img, 0, 0, width, height);
-            URL.revokeObjectURL(url);
 
             // PNGとしてダウンロード
             const pngUrl = canvas.toDataURL('image/png');
@@ -358,15 +374,15 @@
             document.body.removeChild(a);
           };
 
-          img.onerror = () => {
-            URL.revokeObjectURL(url);
-            alert('PNG変換に失敗しました');
+          img.onerror = (e) => {
+            console.error('Image load error:', e);
+            alert('PNG変換に失敗しました（画像読み込みエラー）');
           };
 
-          img.src = url;
+          img.src = dataUrl;
         } catch (e) {
           console.error('PNG conversion failed:', e);
-          alert('PNG変換に失敗しました');
+          alert('PNG変換に失敗しました: ' + e.message);
         }
       }, [code, currentMode]);
 
