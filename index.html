@@ -95,7 +95,13 @@
           const params = new URLSearchParams(window.location.search);
           const data = params.get('data');
           if (data) {
-            const decoded = decodeURIComponent(atob(data));
+            // Base64デコード → UTF-8バイト配列 → 文字列
+            const binary = atob(data);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+            const decoded = new TextDecoder('utf-8').decode(bytes);
             setCode(decoded);
             setActiveTab('preview');
             // URLをクリーンにする（履歴を残さず）
@@ -186,7 +192,10 @@
         try {
           const isSvg = code.includes('<svg');
           const content = isSvg ? extractSvgTag(code.trim()) : code;
-          const encoded = btoa(encodeURIComponent(content));
+          // UTF-8バイト配列 → Base64
+          const bytes = new TextEncoder().encode(content);
+          const binary = String.fromCharCode(...bytes);
+          const encoded = btoa(binary);
           const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
 
           // クリップボードにコピー
