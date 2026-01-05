@@ -741,29 +741,39 @@
 
           {/* ライブラリパネル */}
           {showLibrary && (
-            <div className="bg-gray-850 border-b border-gray-700 p-4 max-h-64 overflow-auto">
+            <div className="bg-gray-800 border-b border-gray-700 p-4 max-h-64 overflow-auto">
               {savedItems.length === 0 ? (
-                <p className="text-gray-500 text-center">まだ保存がありません</p>
+                <div className="text-gray-500 text-center py-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  <p>まだ保存がありません</p>
+                </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {savedItems.map(item => (
                     <div
                       key={item.id}
-                      className="bg-gray-800 rounded px-3 py-2 flex items-center gap-2 hover:bg-gray-700 cursor-pointer transition"
+                      className="bg-gray-700 rounded-lg px-3 py-2 hover:bg-gray-600 cursor-pointer transition"
                       onClick={() => { handleLoad(item); setShowLibrary(false); }}
                     >
-                      <span className={`px-2 py-0.5 text-xs rounded font-medium ${
-                        item.type === 'SVG' ? 'bg-purple-600' : item.type === 'TEXT' ? 'bg-gray-600' : 'bg-blue-600'
-                      } text-white`}>
-                        {item.type}
-                      </span>
-                      <span className="text-white text-sm">{item.title}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                        className="text-gray-500 hover:text-red-400 ml-1"
-                      >
-                        ×
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 text-xs rounded font-medium ${
+                          item.type === 'SVG' ? 'bg-purple-600' : item.type === 'TEXT' ? 'bg-gray-500' : 'bg-blue-600'
+                        } text-white`}>
+                          {item.type}
+                        </span>
+                        <span className="text-white text-sm font-medium">{item.title}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                          className="text-gray-400 hover:text-red-400 ml-1"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="text-gray-400 text-xs mt-1">
+                        {new Date(item.createdAt).toLocaleDateString('ja-JP')}
+                      </div>
                     </div>
                   ))}
                 </div>
