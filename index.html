@@ -90,12 +90,12 @@
         }
       }, []);
 
-      // URLパラメータからコードを読み込み
+      // URLパラメータからコードを読み込み（フラグメント#を使用）
       useEffect(() => {
         try {
-          const params = new URLSearchParams(window.location.search);
-          const data = params.get('data');
-          if (data) {
+          const hash = window.location.hash;
+          if (hash && hash.startsWith('#data=')) {
+            const data = hash.slice(6); // '#data=' を除去
             // lz-stringで解凍
             const decoded = LZString.decompressFromEncodedURIComponent(data);
             if (decoded) {
@@ -183,7 +183,7 @@
         setActiveTab('preview');
       }, []);
 
-      // URL共有機能
+      // URL共有機能（フラグメント#を使用 - より長いデータに対応）
       const handleShare = useCallback(async () => {
         if (!code.trim()) return;
 
@@ -192,17 +192,11 @@
           const content = isSvg ? extractSvgTag(code.trim()) : code;
           // lz-stringで圧縮（URL安全）
           const compressed = LZString.compressToEncodedURIComponent(content);
-          const shareUrl = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
-
-          // URLが長すぎる場合は警告
-          if (shareUrl.length > 8000) {
-            alert('コードが大きすぎてURL共有できません（8000文字制限）');
-            return;
-          }
+          const shareUrl = `${window.location.origin}${window.location.pathname}#data=${compressed}`;
 
           // クリップボードにコピー
           await navigator.clipboard.writeText(shareUrl);
-          alert('共有URLをコピーしました！\nこのURLを送るだけで誰でも同じ内容を見れます。');
+          alert(`共有URLをコピーしました！（${Math.round(shareUrl.length/1000)}KB）\nこのURLを送るだけで誰でも同じ内容を見れます。`);
         } catch (e) {
           console.error('Failed to create share URL:', e);
           alert('共有URLの作成に失敗しました');
