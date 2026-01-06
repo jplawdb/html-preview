@@ -24,6 +24,7 @@ AIが生成したHTML/SVGをサクッと確認・変換・共有できるツー�
 
 | バージョン | 内容 |
 |-----------|------|
+| v2.2.0 | URL短縮機能（Cloudflare Worker） |
 | v2.1.0 | PWA対応（オフライン動作、ホーム画面追加） |
 | v2.0.1 | モバイルPNG変換のUX改善（モーダル表示） |
 | v2.0.0 | PNG変換、URL共有、ライブラリ機能追加 |
@@ -42,5 +43,7 @@ AIが生成したHTML/SVGをサクッと確認・変換・共有できるツー�
 - lz-string（URL圧縮）
 - Canvas API（PNG変換）
 - LocalStorage（ライブラリ）
+- Cloudflare Workers（URL短縮、オプション）
 
-サーバー不要、GitHub Pagesで完結。
+基本はサーバー不要、GitHub Pagesで完結。
+URL短縮を使う場合のみCloudflare Workerが必要（無料）。

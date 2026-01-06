@@ -27,6 +27,10 @@
   <script type="text/babel">
     const { useState, useRef, useCallback, useEffect, useMemo } = React;
 
+    // URL短縮サービスのエンドポイント（Cloudflare Worker）
+    // デプロイ後にここにWorkerのURLを設定
+    const SHORTENER_URL = null; // 例: 'https://url-shortener.your-account.workers.dev'
+
     function HTMLPreviewer() {
       const [code, setCode] = useState('');
 
@@ -176,6 +180,8 @@
       }, []);
 
       // URL共有機能（フラグメント#を使用 - より長いデータに対応）
+      const [isShortening, setIsShortening] = useState(false);
+
       const handleShare = useCallback(async () => {
         if (!code.trim()) return;
 
@@ -184,11 +190,28 @@
           const content = isSvg ? extractSvgTag(code.trim()) : code;
           // lz-stringで圧縮（URL安全）
           const compressed = LZString.compressToEncodedURIComponent(content);
-          const shareUrl = `${window.location.origin}${window.location.pathname}#data=${compressed}`;
+          let shareUrl = `${window.location.origin}${window.location.pathname}#data=${compressed}`;
+
+          // 短縮URLサービスが設定されていれば使用
+          if (SHORTENER_URL) {
+            setIsShortening(true);
+            try {
+              const response = await fetch(`${SHORTENER_URL}?url=${encodeURIComponent(shareUrl)}`);
+              const data = await response.json();
+              if (data.shortUrl) {
+                shareUrl = data.shortUrl;
+              }
+            } catch (e) {
+              console.warn('URL shortening failed, using original URL:', e);
+            } finally {
+              setIsShortening(false);
+            }
+          }
 
           // クリップボードにコピー
           await navigator.clipboard.writeText(shareUrl);
-          alert(`共有URLをコピーしました！（${Math.round(shareUrl.length/1000)}KB）\nこのURLを送るだけで誰でも同じ内容を見れます。`);
+          const sizeInfo = shareUrl.length < 100 ? '短縮済み' : `${Math.round(shareUrl.length/1000)}KB`;
+          alert(`共有URLをコピーしました！（${sizeInfo}）\nこのURLを送るだけで誰でも同じ内容を見れます。`);
         } catch (e) {
           console.error('Failed to create share URL:', e);
           alert('共有URLの作成に失敗しました');
@@ -544,12 +567,20 @@
                 )}
                 <button
                   onClick={handleShare}
-                  className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition active:scale-95"
+                  disabled={isShortening}
+                  className={`p-2 ${isShortening ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-500'} text-white rounded-lg transition active:scale-95`}
                   title="URL共有"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
+                  {isShortening ? (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -833,12 +864,20 @@
                 <div className="flex gap-2">
                   <button
                     onClick={handleShare}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded transition flex items-center gap-1"
+                    disabled={isShortening}
+                    className={`px-3 py-1 ${isShortening ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-500'} text-white text-xs rounded transition flex items-center gap-1`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                    共有
+                    {isShortening ? (
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                    )}
+                    {isShortening ? '処理中...' : '共有'}
                   </button>
                   <button
                     onClick={handleDownload}
