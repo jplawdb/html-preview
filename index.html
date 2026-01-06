@@ -28,8 +28,7 @@
     const { useState, useRef, useCallback, useEffect, useMemo } = React;
 
     // URL短縮サービスのエンドポイント（Cloudflare Worker）
-    // デプロイ後にここにWorkerのURLを設定
-    const SHORTENER_URL = null; // 例: 'https://url-shortener.your-account.workers.dev'
+    const SHORTENER_URL = 'https://url-shortener.takalovesthailand.workers.dev';
 
     function HTMLPreviewer() {
       const [code, setCode] = useState('');
