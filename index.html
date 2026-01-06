@@ -40,6 +40,10 @@
       const [savedItems, setSavedItems] = useState([]);
       const [showLibrary, setShowLibrary] = useState(false);
       const [debouncedCode, setDebouncedCode] = useState('');
+      const showPasteButton = useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('paste') === '1';
+      }, []);
       const containerRef = useRef(null);
       const isDragging = useRef(false);
       const longPressTimer = useRef(null);
@@ -607,15 +611,17 @@
                 </span>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handlePaste}
-                  className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition active:scale-95"
-                  title="ペースト"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </button>
+                {showPasteButton && (
+                  <button
+                    onClick={handlePaste}
+                    className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition active:scale-95"
+                    title="ペースト"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   onClick={() => setCode('')}
                   className="p-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition active:scale-95"
@@ -744,7 +750,7 @@
                     autoCapitalize="off"
                     autoCorrect="off"
                   />
-                  {!code && (
+                  {!code && showPasteButton && (
                     <button
                       onClick={handlePaste}
                       className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 p-6 bg-indigo-600/90 hover:bg-indigo-500 text-white rounded-2xl transition active:scale-95 shadow-lg"
