@@ -14,6 +14,8 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <style>
     /* タッチデバイスでのスクロール改善 */
     textarea {
@@ -82,16 +84,38 @@
           };
           reader.readAsText(file);
         }
-        // PDFファイル: base64でembed
+        // PDFファイル: PDF.jsで画像化
         else if (fileName.endsWith('.pdf') || fileType === 'application/pdf') {
           const reader = new FileReader();
-          reader.onload = (event) => {
-            const base64 = event.target.result;
-            const pdfEmbed = `<embed src="${base64}" type="application/pdf" width="100%" height="600px" style="min-height:80vh;">`;
-            setCode(pdfEmbed);
-            if (navigator.vibrate) navigator.vibrate(50);
+          reader.onload = async (event) => {
+            try {
+              const arrayBuffer = event.target.result;
+              const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+              const images = [];
+
+              for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const scale = 2;
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                const imgData = canvas.toDataURL('image/png');
+                images.push(`<img src="${imgData}" alt="Page ${i}" style="max-width:100%;height:auto;margin-bottom:10px;">`);
+              }
+
+              setCode(images.join('\n'));
+              if (navigator.vibrate) navigator.vibrate(50);
+            } catch (err) {
+              console.error('PDF読み込みエラー:', err);
+              alert('PDFの読み込みに失敗しました');
+            }
           };
-          reader.readAsDataURL(file);
+          reader.readAsArrayBuffer(file);
         }
         // 画像ファイル: base64でimg挿入
         else if (fileType.startsWith('image/')) {
