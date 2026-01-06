@@ -207,10 +207,16 @@
             }
           }
 
-          // クリップボードにコピー
-          await navigator.clipboard.writeText(shareUrl);
+          // クリップボードにコピー（モバイルSafari対応）
           const sizeInfo = shareUrl.length < 100 ? '短縮済み' : `${Math.round(shareUrl.length/1000)}KB`;
-          alert(`共有URLをコピーしました！（${sizeInfo}）\nこのURLを送るだけで誰でも同じ内容を見れます。`);
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert(`共有URLをコピーしました！（${sizeInfo}）\nこのURLを送るだけで誰でも同じ内容を見れます。`);
+          } catch (clipboardError) {
+            // クリップボードAPIが失敗した場合、URLを表示してコピーさせる
+            console.warn('Clipboard API failed, showing prompt:', clipboardError);
+            prompt(`共有URL（${sizeInfo}）\n長押しでコピーしてください:`, shareUrl);
+          }
         } catch (e) {
           console.error('Failed to create share URL:', e);
           alert('共有URLの作成に失敗しました');
