@@ -54,6 +54,44 @@
       const isDragging = useRef(false);
       const longPressTimer = useRef(null);
       const textareaRef = useRef(null);
+      const imageInputRef = useRef(null);
+
+      // 画像ファイル選択ハンドラ（モバイル用）
+      const handleImageSelect = useCallback((e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target.result;
+          const imgTag = `<img src="${base64}" alt="写真" style="max-width:100%;height:auto;">`;
+
+          // カーソル位置に挿入、またはコードの末尾に追加
+          if (textareaRef.current) {
+            const textarea = textareaRef.current;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const currentCode = code;
+
+            if (start !== end || start > 0) {
+              // カーソル位置に挿入
+              const newCode = currentCode.slice(0, start) + imgTag + currentCode.slice(end);
+              setCode(newCode);
+            } else {
+              // 末尾に追加
+              setCode(currentCode + (currentCode ? '\n' : '') + imgTag);
+            }
+          } else {
+            setCode(code + (code ? '\n' : '') + imgTag);
+          }
+
+          if (navigator.vibrate) navigator.vibrate(50);
+        };
+        reader.readAsDataURL(file);
+
+        // 同じファイルを再選択可能にする
+        e.target.value = '';
+      }, [code]);
 
       // 長押しでペースト（モバイル用）
       const handleLongPressStart = useCallback((e) => {
@@ -618,6 +656,23 @@
                 </span>
               </div>
               <div className="flex gap-2">
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => imageInputRef.current?.click()}
+                  className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition active:scale-95"
+                  title="写真を追加"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
                 <button
                   onClick={() => setCode('')}
                   className="p-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition active:scale-95"
