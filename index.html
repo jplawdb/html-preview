@@ -43,6 +43,7 @@
       const containerRef = useRef(null);
       const isDragging = useRef(false);
       const longPressTimer = useRef(null);
+      const textareaRef = useRef(null);
 
       // 長押しでペースト（モバイル用）
       const handleLongPressStart = useCallback((e) => {
@@ -70,15 +71,32 @@
 
       // ペーストボタン用（モバイル）
       const handlePaste = useCallback(async () => {
+        // まずClipboard APIを試す
         try {
           const text = await navigator.clipboard.readText();
           if (text) {
             setCode(text);
             if (navigator.vibrate) navigator.vibrate(50);
+            return;
           }
         } catch (err) {
-          // フォールバック：ブラウザ標準のペーストを促す
-          alert('クリップボードへのアクセスが許可されていません。\n入力欄を長押しして「ペースト」を選んでください。');
+          console.warn('Clipboard API failed:', err);
+        }
+
+        // フォールバック：テキストエリアにフォーカスしてexecCommandを試す
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          try {
+            const success = document.execCommand('paste');
+            if (success) {
+              if (navigator.vibrate) navigator.vibrate(50);
+              return;
+            }
+          } catch (e) {
+            console.warn('execCommand paste failed:', e);
+          }
+          // それでもダメなら、フォーカス状態でユーザーに長押しを促す
+          // キーボードが開くので、そこから長押しでペースト可能
         }
       }, []);
 
@@ -714,6 +732,7 @@
               {activeTab === 'code' ? (
                 <div className="relative w-full h-full">
                   <textarea
+                    ref={textareaRef}
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     onTouchStart={handleLongPressStart}
