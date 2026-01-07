@@ -461,7 +461,10 @@
       // プレビュー用コード（デバウンス適用）
       const previewCode = useMemo(() => {
         const trimmed = debouncedCode.trim();
-        const isSvg = trimmed.includes('<svg') || trimmed.startsWith('<?xml');
+        // HTMLドキュメントの場合はそのまま表示（中にSVGがあってもHTML扱い）
+        const isHtmlDoc = trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML');
+        // 純粋なSVGの場合のみSVG処理
+        const isSvg = !isHtmlDoc && (trimmed.startsWith('<svg') || trimmed.startsWith('<?xml'));
 
         if (isSvg) {
           const svgOnly = extractSvgTag(trimmed);
@@ -503,7 +506,12 @@
           return 'TEXT';
         }
 
-        // <svg or <?xml → SVG
+        // HTMLドキュメント（<!DOCTYPE, <html）→ HTML（中にSVGがあってもHTML）
+        if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
+          return 'HTML';
+        }
+
+        // 純粋なSVG（<svg or <?xml で始まる）→ SVG
         if (trimmed.startsWith('<svg') || trimmed.startsWith('<?xml')) {
           return 'SVG';
         }
