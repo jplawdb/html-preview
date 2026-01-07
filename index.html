@@ -1389,32 +1389,32 @@
               </div>
             </div>
           </div>
-        </div>
 
-        {/* カスタム確認ダイアログ（ブラウザ風） */}
-        {confirmDialog.show && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-            <div className="bg-white rounded-lg shadow-xl mx-4 max-w-sm w-full overflow-hidden">
-              <div className="px-4 py-3 text-gray-900 text-sm">
-                {confirmDialog.message}
-              </div>
-              <div className="flex border-t border-gray-200">
-                <button
-                  onClick={() => setConfirmDialog({ show: false, message: '', onConfirm: null })}
-                  className="flex-1 py-3 text-blue-600 font-medium text-base border-r border-gray-200 active:bg-gray-100"
-                >
-                  キャンセル
-                </button>
-                <button
-                  onClick={confirmDialog.onConfirm}
-                  className="flex-1 py-3 text-blue-600 font-medium text-base active:bg-gray-100"
-                >
-                  OK
-                </button>
+          {/* カスタム確認ダイアログ（ブラウザ風） */}
+          {confirmDialog.show && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+              <div className="bg-white rounded-lg shadow-xl mx-4 max-w-sm w-full overflow-hidden">
+                <div className="px-4 py-3 text-gray-900 text-sm">
+                  {confirmDialog.message}
+                </div>
+                <div className="flex border-t border-gray-200">
+                  <button
+                    onClick={() => setConfirmDialog({ show: false, message: '', onConfirm: null })}
+                    className="flex-1 py-3 text-blue-600 font-medium text-base border-r border-gray-200 active:bg-gray-100"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={confirmDialog.onConfirm}
+                    className="flex-1 py-3 text-blue-600 font-medium text-base active:bg-gray-100"
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       );
     }
 
