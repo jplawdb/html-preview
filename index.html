@@ -884,6 +884,45 @@
         URL.revokeObjectURL(url);
       }, [code, currentMode]);
 
+      // 印刷機能（新しいウィンドウで開いて全ページ印刷可能に）
+      const handlePrint = useCallback(() => {
+        const isSvg = currentMode === 'SVG';
+        const content = isSvg ? extractSvgTag(code.trim()) : code;
+
+        // 印刷用のHTMLを作成（全ページ表示）
+        const printHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>印刷プレビュー</title>
+  <style>
+    @media print {
+      body { margin: 0; padding: 20px; }
+      @page { margin: 15mm; }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(printHtml);
+          printWindow.document.close();
+          // 少し待ってから印刷ダイアログを開く
+          setTimeout(() => {
+            printWindow.print();
+          }, 300);
+        }
+      }, [code, currentMode]);
+
       // モバイルレイアウト
       if (isMobile) {
         return (
@@ -953,6 +992,15 @@
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={handlePrint}
+                  className="p-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition active:scale-95"
+                  title="印刷"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                </button>
                 <button
                   onClick={handleShare}
                   disabled={isShortening}
@@ -1511,6 +1559,12 @@
                   🖼 PNG
                 </button>
               )}
+              <button
+                onClick={handlePrint}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm rounded transition"
+              >
+                🖨 印刷
+              </button>
               <button
                 onClick={handleShare}
                 disabled={isShortening}
