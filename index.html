@@ -793,16 +793,27 @@
 
           // モバイル：モーダルで画像を表示（長押し保存 or ダウンロードボタン）
           if (isMobile) {
+            // data URLをBlobに変換（iOS長押し保存対応）
+            const byteString = atob(pngDataUrl.split(',')[1]);
+            const mimeType = 'image/png';
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeType });
+            const blobUrl = URL.createObjectURL(blob);
+
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
             modal.innerHTML = `
               <p style="color:white;font-size:16px;margin-bottom:16px;text-align:center;">📱 画像を長押しして保存</p>
-              <img src="${pngDataUrl}" style="max-width:90%;max-height:60vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" />
-              <a href="${pngDataUrl}" download="${filename}" style="margin-top:16px;padding:14px 28px;background:#22c55e;color:white;border-radius:8px;font-size:15px;text-decoration:none;">🖼 PNGをダウンロード</a>
+              <img src="${blobUrl}" style="max-width:90%;max-height:60vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);-webkit-touch-callout:default;" />
+              <a href="${blobUrl}" download="${filename}" style="margin-top:16px;padding:14px 28px;background:#22c55e;color:white;border-radius:8px;font-size:15px;text-decoration:none;">🖼 PNGをダウンロード</a>
               <button style="margin-top:12px;padding:12px 32px;background:#6b7280;color:white;border:none;border-radius:8px;font-size:16px;">閉じる</button>
             `;
-            modal.querySelector('button').onclick = () => modal.remove();
-            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            modal.querySelector('button').onclick = () => { modal.remove(); URL.revokeObjectURL(blobUrl); };
+            modal.onclick = (e) => { if (e.target === modal) { modal.remove(); URL.revokeObjectURL(blobUrl); } };
             document.body.appendChild(modal);
           } else {
             // デスクトップ：直接ダウンロード
