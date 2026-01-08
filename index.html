@@ -776,19 +776,26 @@
             pdfBlob = pdf.output('blob');
 
           } else {
-            // HTMLの場合：一時divにレンダリングしてキャプチャ
+            // HTMLの場合：A4サイズでページ分割してPDF化
             if (!window.html2canvas) {
               alert('html2canvasライブラリが読み込まれていません。ページを再読み込みしてください。');
               return;
             }
 
+            // A4サイズ（mm）をピクセルに変換（96dpi基準）
+            const a4Width = 210 * 96 / 25.4;  // 約794px
+            const a4Height = 297 * 96 / 25.4; // 約1123px
+            const margin = 20; // 余白
+            const contentWidth = a4Width - margin * 2;
+
             const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:white;';
+            tempContainer.style.cssText = `position:absolute;left:-9999px;top:0;width:${contentWidth}px;background:white;padding:${margin}px;`;
             tempContainer.innerHTML = code;
             document.body.appendChild(tempContainer);
 
             await new Promise(resolve => setTimeout(resolve, 500));
 
+            // 全体をキャプチャ
             const canvas = await html2canvas(tempContainer, {
               scale: 2,
               useCORS: true,
@@ -797,12 +804,35 @@
             });
 
             document.body.removeChild(tempContainer);
-            imgDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-            const imgWidth = canvas.width / 2;
-            const imgHeight = canvas.height / 2;
-            const orientation = imgWidth > imgHeight ? 'l' : 'p';
-            const pdf = new jsPDF({ orientation, unit: 'px', format: [imgWidth, imgHeight] });
-            pdf.addImage(imgDataUrl, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+            // A4縦向きでPDF作成
+            const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [a4Width, a4Height] });
+
+            const scale = 2;
+            const pageHeightPx = a4Height * scale; // キャプチャ時のスケールを考慮
+            const totalHeight = canvas.height;
+            const pageCount = Math.ceil(totalHeight / pageHeightPx);
+
+            for (let page = 0; page < pageCount; page++) {
+              if (page > 0) pdf.addPage();
+
+              // 各ページ分の領域を切り出し
+              const srcY = page * pageHeightPx;
+              const srcHeight = Math.min(pageHeightPx, totalHeight - srcY);
+
+              const pageCanvas = document.createElement('canvas');
+              pageCanvas.width = canvas.width;
+              pageCanvas.height = srcHeight;
+              const ctx = pageCanvas.getContext('2d');
+              ctx.fillStyle = 'white';
+              ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+              ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+
+              const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.85);
+              const destHeight = srcHeight / scale;
+              pdf.addImage(pageImgData, 'JPEG', 0, 0, a4Width, destHeight);
+            }
+
             pdfBlob = pdf.output('blob');
           }
 
