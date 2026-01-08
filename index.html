@@ -924,28 +924,32 @@
             pdfBlob = pdf.output('blob');
           }
 
-          // PWAスタンドアロンモード検出
-          const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                        window.navigator.standalone === true;
-
-          // PWA/モバイルではWeb Share APIを使用
-          if ((isPWA || isMobile) && navigator.canShare) {
-            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-              await navigator.share({ files: [file], title: filename });
-              return;
-            }
-          }
-
-          // 通常のダウンロード
+          // PDFをBlobURLで表示（モバイルでも動作）
           const url = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+
+          if (isMobile) {
+            // モバイル：モーダルでPDFリンクを表示
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+            modal.innerHTML = `
+              <p style="color:white;font-size:18px;margin-bottom:20px;text-align:center;">PDF生成完了</p>
+              <a href="${url}" download="${filename}" style="padding:16px 32px;background:#22c55e;color:white;border-radius:8px;font-size:16px;text-decoration:none;margin-bottom:12px;">📄 PDFをダウンロード</a>
+              <a href="${url}" target="_blank" style="padding:12px 24px;background:#3b82f6;color:white;border-radius:8px;font-size:14px;text-decoration:none;margin-bottom:20px;">別タブで開く</a>
+              <button style="padding:12px 32px;background:#6b7280;color:white;border:none;border-radius:8px;font-size:16px;">閉じる</button>
+            `;
+            modal.querySelector('button').onclick = () => { modal.remove(); URL.revokeObjectURL(url); };
+            modal.onclick = (e) => { if (e.target === modal) { modal.remove(); URL.revokeObjectURL(url); } };
+            document.body.appendChild(modal);
+          } else {
+            // デスクトップ：直接ダウンロード
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
 
         } catch (e) {
           console.error('PDF generation failed:', e);
