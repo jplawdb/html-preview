@@ -776,7 +776,7 @@
             pdfBlob = pdf.output('blob');
 
           } else {
-            // HTMLの場合：A4サイズでページ分割してPDF化
+            // HTMLの場合：A4サイズでスマートページ分割してPDF化
             if (!window.html2canvas) {
               alert('html2canvasライブラリが読み込まれていません。ページを再読み込みしてください。');
               return;
@@ -785,8 +785,9 @@
             // A4サイズ（mm）をピクセルに変換（96dpi基準）
             const a4Width = 210 * 96 / 25.4;  // 約794px
             const a4Height = 297 * 96 / 25.4; // 約1123px
-            const margin = 20; // 余白
+            const margin = 30; // 余白
             const contentWidth = a4Width - margin * 2;
+            const pageContentHeight = a4Height - margin * 2; // 1ページの有効高さ
 
             const tempContainer = document.createElement('div');
             tempContainer.style.cssText = `position:absolute;left:-9999px;top:0;width:${contentWidth}px;background:white;padding:${margin}px;`;
@@ -795,9 +796,37 @@
 
             await new Promise(resolve => setTimeout(resolve, 500));
 
+            // ブロック要素の境界位置を取得
+            const blockElements = tempContainer.querySelectorAll('p, div, h1, h2, h3, h4, h5, h6, ul, ol, li, table, tr, blockquote, pre, hr, section, article, header, footer, img, figure, svg');
+            const breakPoints = [0]; // ページ区切り位置（px）
+
+            let currentPageBottom = pageContentHeight;
+
+            // 各ブロック要素をチェックして、ページ境界に近いところで区切る
+            blockElements.forEach(el => {
+              const elTop = el.offsetTop;
+              const elBottom = elTop + el.offsetHeight;
+
+              // この要素がページをまたぐ場合、要素の直前で区切る
+              if (elTop < currentPageBottom && elBottom > currentPageBottom) {
+                // 要素が大きすぎてページに収まらない場合はスキップ
+                if (el.offsetHeight < pageContentHeight * 0.8) {
+                  breakPoints.push(elTop);
+                  currentPageBottom = elTop + pageContentHeight;
+                }
+              }
+              // 要素が完全に次ページにある場合、次の区切り位置を更新
+              while (elBottom > currentPageBottom) {
+                currentPageBottom += pageContentHeight;
+              }
+            });
+
+            const totalHeight = tempContainer.scrollHeight;
+
             // 全体をキャプチャ
+            const scale = 2;
             const canvas = await html2canvas(tempContainer, {
-              scale: 2,
+              scale: scale,
               useCORS: true,
               backgroundColor: '#ffffff',
               logging: false
@@ -808,17 +837,14 @@
             // A4縦向きでPDF作成
             const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [a4Width, a4Height] });
 
-            const scale = 2;
-            const pageHeightPx = a4Height * scale; // キャプチャ時のスケールを考慮
-            const totalHeight = canvas.height;
-            const pageCount = Math.ceil(totalHeight / pageHeightPx);
+            // ページ区切り位置でPDFを生成
+            breakPoints.push(totalHeight); // 最後まで
 
-            for (let page = 0; page < pageCount; page++) {
-              if (page > 0) pdf.addPage();
+            for (let i = 0; i < breakPoints.length - 1; i++) {
+              if (i > 0) pdf.addPage();
 
-              // 各ページ分の領域を切り出し
-              const srcY = page * pageHeightPx;
-              const srcHeight = Math.min(pageHeightPx, totalHeight - srcY);
+              const srcY = breakPoints[i] * scale;
+              const srcHeight = Math.min((breakPoints[i + 1] - breakPoints[i]) * scale, pageContentHeight * scale);
 
               const pageCanvas = document.createElement('canvas');
               pageCanvas.width = canvas.width;
@@ -829,8 +855,7 @@
               ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
 
               const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.85);
-              const destHeight = srcHeight / scale;
-              pdf.addImage(pageImgData, 'JPEG', 0, 0, a4Width, destHeight);
+              pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, srcHeight / scale);
             }
 
             pdfBlob = pdf.output('blob');
