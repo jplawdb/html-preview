@@ -888,18 +888,23 @@
             pdfBlob = pdf.output('blob');
 
           } else {
-            // HTMLの場合：iframeをhtml2canvasでキャプチャ
-            const iframe = document.querySelector('iframe');
-            if (!iframe) { alert('プレビューが見つかりません'); return; }
+            // HTMLの場合：一時divにレンダリングしてキャプチャ
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:white;';
+            tempContainer.innerHTML = code;
+            document.body.appendChild(tempContainer);
 
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            const body = iframeDoc.body;
+            // スタイル・画像の読み込みを待つ
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            const canvas = await html2canvas(body, {
+            const canvas = await html2canvas(tempContainer, {
               scale: 2,
               useCORS: true,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              logging: false
             });
+
+            document.body.removeChild(tempContainer);
 
             const imgData = canvas.toDataURL('image/png');
             const imgWidth = canvas.width;
