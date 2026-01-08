@@ -777,34 +777,18 @@
             pdfBlob = pdf.output('blob');
 
           } else {
-            // HTMLの場合：A4サイズでスマートページ分割してPDF化
+            // HTMLの場合：A4縦サイズでスマートページ分割してPDF化
             if (!window.html2canvas) {
               alert('html2canvasライブラリが読み込まれていません。ページを再読み込みしてください。');
               return;
             }
 
-            // まず自然なサイズでレンダリングして向きを自動判定
-            const measureContainer = document.createElement('div');
-            measureContainer.style.cssText = 'position:absolute;left:-9999px;top:0;display:inline-block;background:white;padding:30px;';
-            measureContainer.innerHTML = code;
-            document.body.appendChild(measureContainer);
-            await new Promise(resolve => setTimeout(resolve, 300));
-            const naturalWidth = measureContainer.scrollWidth;
-            const naturalHeight = measureContainer.scrollHeight;
-            document.body.removeChild(measureContainer);
-
-            // 横長コンテンツ（幅が高さの1.2倍以上）なら横向き
-            const autoOrientation = naturalWidth > naturalHeight * 1.2 ? 'l' : 'p';
-
             // A4サイズ（mm）をピクセルに変換（96dpi基準）
-            const a4Short = 210 * 96 / 25.4;  // 約794px（短辺）
-            const a4Long = 297 * 96 / 25.4;   // 約1123px（長辺）
-            // 自動判定した向きで幅・高さを設定
-            const pageWidth = autoOrientation === 'l' ? a4Long : a4Short;
-            const pageHeight = autoOrientation === 'l' ? a4Short : a4Long;
+            const a4Width = 210 * 96 / 25.4;  // 約794px
+            const a4Height = 297 * 96 / 25.4; // 約1123px
             const margin = 30; // 余白
-            const contentWidth = pageWidth - margin * 2;
-            const pageContentHeight = pageHeight - margin * 2; // 1ページの有効高さ
+            const contentWidth = a4Width - margin * 2;
+            const pageContentHeight = a4Height - margin * 2; // 1ページの有効高さ
 
             const tempContainer = document.createElement('div');
             tempContainer.style.cssText = `position:absolute;left:-9999px;top:0;width:${contentWidth}px;background:white;padding:${margin}px;`;
@@ -851,8 +835,8 @@
 
             document.body.removeChild(tempContainer);
 
-            // 自動判定した向きでPDF作成
-            const pdf = new jsPDF({ orientation: autoOrientation, unit: 'px', format: [pageWidth, pageHeight] });
+            // A4縦向きでPDF作成
+            const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [a4Width, a4Height] });
 
             // ページ区切り位置でPDFを生成
             breakPoints.push(totalHeight); // 最後まで
