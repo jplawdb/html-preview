@@ -1300,7 +1300,7 @@ ${content}
                                 : 'bg-gray-800 border border-transparent'
                               : 'bg-gray-800 active:bg-gray-700'
                           }`}
-                          onClick={selectMode ? () => toggleItemSelection(item.id) : undefined}
+                          onClick={selectMode ? () => toggleSelectItem(item.id) : undefined}
                         >
                           {selectMode && (
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
