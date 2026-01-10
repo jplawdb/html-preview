@@ -70,6 +70,51 @@
       const textareaRef = useRef(null);
       const fileInputRef = useRef(null);
       const importInputRef = useRef(null);
+      const libraryLongPressTimer = useRef(null);
+      const libraryLongPressTriggered = useRef(false);
+      const libraryTouchStart = useRef({ x: 0, y: 0 });
+
+      // ライブラリ長押し開始
+      const handleLibraryTouchStart = useCallback((e, item) => {
+        if (selectMode) return;
+        const touch = e.touches[0];
+        libraryTouchStart.current = { x: touch.clientX, y: touch.clientY };
+        libraryLongPressTriggered.current = false;
+        libraryLongPressTimer.current = setTimeout(() => {
+          libraryLongPressTriggered.current = true;
+          if (navigator.vibrate) navigator.vibrate(50);
+          setActionMenu(item);
+        }, 500);
+      }, [selectMode]);
+
+      // ライブラリ長押し終了
+      const handleLibraryTouchEnd = useCallback(() => {
+        if (libraryLongPressTimer.current) {
+          clearTimeout(libraryLongPressTimer.current);
+          libraryLongPressTimer.current = null;
+        }
+      }, []);
+
+      // ライブラリタッチ移動（10px以上でキャンセル）
+      const handleLibraryTouchMove = useCallback((e) => {
+        if (!libraryLongPressTimer.current) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - libraryTouchStart.current.x;
+        const dy = touch.clientY - libraryTouchStart.current.y;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+          clearTimeout(libraryLongPressTimer.current);
+          libraryLongPressTimer.current = null;
+        }
+      }, []);
+
+      // ライブラリアイテムタップ（長押しでなければロード）
+      const handleLibraryTap = useCallback((item) => {
+        if (libraryLongPressTriggered.current) {
+          libraryLongPressTriggered.current = false;
+          return;
+        }
+        handleLoad(item);
+      }, []);
 
       // ファイル選択ハンドラ（モバイル用）- 画像/HTML/PDF対応
       const handleFileSelect = useCallback((e) => {
@@ -1305,8 +1350,12 @@ ${content}
                             </div>
                           )}
                           <div
-                            className="flex-1 min-w-0 cursor-pointer"
-                            onClick={selectMode ? undefined : () => handleLoad(item)}
+                            className="flex-1 min-w-0 cursor-pointer select-none"
+                            onClick={selectMode ? undefined : () => handleLibraryTap(item)}
+                            onTouchStart={(e) => handleLibraryTouchStart(e, item)}
+                            onTouchEnd={handleLibraryTouchEnd}
+                            onTouchMove={handleLibraryTouchMove}
+                            onTouchCancel={handleLibraryTouchEnd}
                           >
                             <div className="flex items-start gap-2">
                               {item.starred && (
