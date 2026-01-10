@@ -1338,9 +1338,10 @@ ${content}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  console.log('Edit clicked:', item.id, item.title);
                                   setEditingItem({ id: item.id, title: item.title });
                                 }}
-                                className="p-2 text-gray-500 hover:text-blue-400 transition"
+                                className="p-2 text-gray-500 hover:text-blue-400 transition active:scale-95"
                                 title="タイトル編集"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1884,8 +1885,8 @@ ${content}
                                 </svg>
                               </button>
                               <button
-                                onClick={(e) => { e.stopPropagation(); setEditingItem({ id: item.id, title: item.title }); }}
-                                className="p-1 text-gray-500 hover:text-blue-400 transition flex-shrink-0"
+                                onClick={(e) => { e.stopPropagation(); console.log('Edit clicked desktop:', item.id); setEditingItem({ id: item.id, title: item.title }); }}
+                                className="p-1 text-gray-500 hover:text-blue-400 transition flex-shrink-0 active:scale-95"
                                 title="タイトル編集"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
