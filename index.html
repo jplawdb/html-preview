@@ -1360,9 +1360,41 @@ ${content}
                 </div>
               ) : (
                 <div className="flex flex-col w-full h-full">
-                  {/* 上部ツールバー（最大化時は非表示） */}
+                  {/* プレビューエリア */}
+                  <div className="relative flex-1 overflow-hidden">
+                    {currentMode === 'SVG' ? (
+                      <div
+                        className="w-full h-full bg-gray-100 overflow-auto p-4"
+                        style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                        dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
+                      />
+                    ) : currentMode === 'TEXT' ? (
+                      <div className="w-full h-full bg-white overflow-auto p-4">
+                        <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
+                      </div>
+                    ) : (
+                      <iframe
+                        srcDoc={previewCode}
+                        title="Preview"
+                        className="w-full h-full border-0 bg-white"
+                        sandbox="allow-scripts"
+                      />
+                    )}
+                    {/* 最大化時の閉じるボタン */}
+                    {isFullscreen && (
+                      <button
+                        onClick={() => setIsFullscreen(false)}
+                        className="absolute top-2 right-2 p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg transition active:scale-95 z-10"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  {/* 下部ツールバー（最大化時は非表示） */}
                   {!isFullscreen && (
-                    <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-b border-gray-700">
+                    <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-t border-gray-700">
                       <div className="flex gap-1">
                         {/* ダウンロード */}
                         <button
@@ -1477,38 +1509,6 @@ ${content}
                       </div>
                     </div>
                   )}
-                  {/* プレビューエリア */}
-                  <div className="relative flex-1 overflow-hidden">
-                    {currentMode === 'SVG' ? (
-                      <div
-                        className="w-full h-full bg-gray-100 overflow-auto p-4"
-                        style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-                        dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
-                      />
-                    ) : currentMode === 'TEXT' ? (
-                      <div className="w-full h-full bg-white overflow-auto p-4">
-                        <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
-                      </div>
-                    ) : (
-                      <iframe
-                        srcDoc={previewCode}
-                        title="Preview"
-                        className="w-full h-full border-0 bg-white"
-                        sandbox="allow-scripts"
-                      />
-                    )}
-                    {/* 最大化時の閉じるボタン */}
-                    {isFullscreen && (
-                      <button
-                        onClick={() => setIsFullscreen(false)}
-                        className="absolute top-2 right-2 p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg transition active:scale-95 z-10"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
