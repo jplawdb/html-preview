@@ -54,7 +54,6 @@
       const [searchQuery, setSearchQuery] = useState(''); // ライブラリ検索
       const [showStarredOnly, setShowStarredOnly] = useState(false); // ★のみ表示
       const [confirmDialog, setConfirmDialog] = useState({ show: false, message: '', onConfirm: null }); // カスタム確認ダイアログ
-      const [selectMode, setSelectMode] = useState(false); // 選択モード
       const [selectedItems, setSelectedItems] = useState(new Set()); // 選択中のアイテムID
       const [syncModal, setSyncModal] = useState({ show: false, mode: null, code: null, loading: false, error: null }); // 同期モーダル
       const [syncCodeInput, setSyncCodeInput] = useState(''); // 同期コード入力
@@ -165,10 +164,9 @@
 
       // アイテムスワイプ開始
       const handleItemSwipeStart = useCallback((e, itemId) => {
-        if (selectMode) return;
         const touch = e.touches[0];
         itemSwipeStart.current = { x: touch.clientX, y: touch.clientY, id: itemId };
-      }, [selectMode]);
+      }, []);
 
       // アイテムスワイプ終了
       const handleItemSwipeEnd = useCallback((e) => {
@@ -190,7 +188,6 @@
 
       // ライブラリ長押し開始
       const handleLibraryTouchStart = useCallback((e, item) => {
-        if (selectMode) return;
         const touch = e.touches[0];
         libraryTouchStart.current = { x: touch.clientX, y: touch.clientY };
         libraryLongPressTriggered.current = false;
@@ -199,7 +196,7 @@
           if (navigator.vibrate) navigator.vibrate(50);
           setActionMenu(item);
         }, 500);
-      }, [selectMode]);
+      }, []);
 
       // ライブラリ長押し終了
       const handleLibraryTouchEnd = useCallback(() => {
@@ -548,13 +545,8 @@
 
       // エクスポート機能（JSONダウンロード）
       const handleExport = useCallback(() => {
-        const itemsToExport = selectMode && selectedItems.size > 0
-          ? savedItems.filter(item => selectedItems.has(item.id))
-          : savedItems;
-        if (itemsToExport.length === 0) {
-          alert('エクスポートするデータがありません');
-          return;
-        }
+        const itemsToExport = savedItems.filter(item => selectedItems.has(item.id));
+        if (itemsToExport.length === 0) return;
         const data = JSON.stringify(itemsToExport, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -565,10 +557,9 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        // エクスポート後は選択モード解除
-        setSelectMode(false);
+        // エクスポート後は選択解除
         setSelectedItems(new Set());
-      }, [savedItems, selectMode, selectedItems]);
+      }, [savedItems, selectedItems]);
 
       // アイテム選択トグル
       const toggleSelectItem = useCallback((id) => {
@@ -626,16 +617,10 @@
 
       // 同期コード発行（データをサーバーに保存）
       const generateSyncCode = useCallback(async () => {
-        const itemsToExport = selectMode && selectedItems.size > 0
-          ? savedItems.filter(item => selectedItems.has(item.id))
-          : savedItems;
-        if (itemsToExport.length === 0) {
-          alert('同期するデータがありません');
-          return;
-        }
+        const itemsToExport = savedItems.filter(item => selectedItems.has(item.id));
+        if (itemsToExport.length === 0) return;
 
         setSyncModal({ show: true, mode: 'generate', code: null, loading: true, error: null, count: itemsToExport.length });
-        setSelectMode(false);
         setSelectedItems(new Set());
 
         try {
@@ -656,7 +641,7 @@
           console.error('Sync error:', err);
           setSyncModal(prev => ({ ...prev, loading: false, error: 'コード発行に失敗しました' }));
         }
-      }, [savedItems, selectMode, selectedItems]);
+      }, [savedItems, selectedItems]);
 
       // 同期コード入力モーダルを開く
       const openSyncInput = useCallback(() => {
@@ -1290,70 +1275,51 @@ ${content}
                   {/* 上部ツールバー */}
                   <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-b border-gray-700">
                     <div className="flex gap-1">
-                      {selectMode ? (
-                        <>
-                          <button
-                            onClick={toggleSelectAll}
-                            className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded-lg transition active:scale-95"
-                          >
-                            {selectedItems.size === savedItems.length ? '全解除' : '全選択'}
-                          </button>
-                          <button
-                            onClick={handleExport}
-                            disabled={selectedItems.size === 0}
-                            className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
-                          >
-                            保存
-                          </button>
-                          <button
-                            onClick={generateSyncCode}
-                            disabled={selectedItems.size === 0}
-                            className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-indigo-600 hover:bg-indigo-500'}`}
-                          >
-                            送信
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (selectedItems.size > 0) {
-                                setConfirmDialog({
-                                  show: true,
-                                  message: `${selectedItems.size}件を削除しますか？`,
-                                  onConfirm: () => {
-                                    const newItems = savedItems.filter(item => !selectedItems.has(item.id));
-                                    setSavedItems(newItems);
-                                    localStorage.setItem('html-preview-saved', JSON.stringify(newItems));
-                                    setSelectedItems(new Set());
-                                    setSelectMode(false);
-                                    setConfirmDialog({ show: false, message: '', onConfirm: null });
-                                  }
-                                });
+                      <button
+                        onClick={toggleSelectAll}
+                        disabled={savedItems.length === 0}
+                        className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${savedItems.length === 0 ? 'bg-gray-600 opacity-50' : 'bg-slate-600 hover:bg-slate-500'}`}
+                      >
+                        {selectedItems.size === savedItems.length && savedItems.length > 0 ? '全解除' : '全選択'}
+                      </button>
+                      <button
+                        onClick={handleExport}
+                        disabled={selectedItems.size === 0}
+                        className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
+                      >
+                        保存
+                      </button>
+                      <button
+                        onClick={generateSyncCode}
+                        disabled={selectedItems.size === 0}
+                        className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                      >
+                        送信
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (selectedItems.size > 0) {
+                            setConfirmDialog({
+                              show: true,
+                              message: `${selectedItems.size}件を削除しますか？`,
+                              onConfirm: () => {
+                                const newItems = savedItems.filter(item => !selectedItems.has(item.id));
+                                setSavedItems(newItems);
+                                localStorage.setItem('html-preview-saved', JSON.stringify(newItems));
+                                setSelectedItems(new Set());
+                                setConfirmDialog({ show: false, message: '', onConfirm: null });
                               }
-                            }}
-                            disabled={selectedItems.size === 0}
-                            className={`p-2 rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50 text-gray-400' : 'bg-red-600 hover:bg-red-500 text-white'}`}
-                            title="選択項目を削除"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => { setSelectMode(false); setSelectedItems(new Set()); }}
-                            className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition active:scale-95"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setSelectMode(true)}
-                          className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded-lg transition active:scale-95"
-                        >
-                          選択
-                        </button>
-                      )}
+                            });
+                          }
+                        }}
+                        disabled={selectedItems.size === 0}
+                        className={`p-2 rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50 text-gray-400' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                        title="選択項目を削除"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                     <div className="flex gap-1">
                       {/* 受信 */}
@@ -1420,28 +1386,27 @@ ${content}
                             className={`flex items-center gap-3 p-3 transition-transform duration-200 ${
                               swipedItemId === item.id ? '-translate-x-16' : ''
                             } ${
-                              selectMode
-                                ? selectedItems.has(item.id)
-                                  ? 'bg-blue-900/50 border border-blue-500'
-                                  : 'bg-gray-800 border border-transparent'
-                                : 'bg-gray-800 active:bg-gray-700'
+                              selectedItems.has(item.id)
+                                ? 'bg-blue-900/50 border border-blue-500'
+                                : 'bg-gray-800 border border-transparent'
                             }`}
-                            onClick={selectMode ? () => toggleSelectItem(item.id) : undefined}
                           >
-                          {selectMode && (
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                          {/* チェックボックス */}
+                          <div
+                            className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${
                               selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-500'
-                            }`}>
-                              {selectedItems.has(item.id) && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                          )}
+                            }`}
+                            onClick={() => toggleSelectItem(item.id)}
+                          >
+                            {selectedItems.has(item.id) && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
                           <div
                             className="flex-1 min-w-0 cursor-pointer select-none"
-                            onClick={selectMode ? undefined : () => handleLibraryTap(item)}
+                            onClick={() => handleLibraryTap(item)}
                             onTouchStart={(e) => handleLibraryTouchStart(e, item)}
                             onTouchEnd={handleLibraryTouchEnd}
                             onTouchMove={handleLibraryTouchMove}
@@ -1459,21 +1424,19 @@ ${content}
                               {new Date(item.updatedAt || item.createdAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
-                          {!selectMode && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActionMenu(item);
-                              }}
-                              className="p-2 text-gray-400 hover:text-white transition"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="5" r="2"/>
-                                <circle cx="12" cy="12" r="2"/>
-                                <circle cx="12" cy="19" r="2"/>
-                              </svg>
-                            </button>
-                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActionMenu(item);
+                            }}
+                            className="p-2 text-gray-400 hover:text-white transition"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="5" r="2"/>
+                              <circle cx="12" cy="12" r="2"/>
+                              <circle cx="12" cy="19" r="2"/>
+                            </svg>
+                          </button>
                           </div>
                           {/* スワイプ時のゴミ箱ボタン */}
                           {swipedItemId === item.id && (
@@ -2164,36 +2127,20 @@ ${content}
                 >
                   インポート
                 </button>
-                {selectMode ? (
-                  <>
-                    <button
-                      onClick={toggleSelectAll}
-                      className="py-1 px-3 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded transition"
-                    >
-                      {selectedItems.size === savedItems.length ? '全解除' : '全選択'}
-                    </button>
-                    <button
-                      onClick={handleExport}
-                      disabled={selectedItems.size === 0}
-                      className={`py-1 px-3 text-white text-xs rounded transition ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
-                    >
-                      {selectedItems.size > 0 ? `JSON(${selectedItems.size})` : 'JSON'}
-                    </button>
-                    <button
-                      onClick={() => { setSelectMode(false); setSelectedItems(new Set()); }}
-                      className="py-1 px-2 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition"
-                    >
-                      ✕
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setSelectMode(true)}
-                    className="py-1 px-3 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded transition"
-                  >
-                    エクスポート
-                  </button>
-                )}
+                <button
+                  onClick={toggleSelectAll}
+                  disabled={savedItems.length === 0}
+                  className={`py-1 px-3 text-white text-xs rounded transition ${savedItems.length === 0 ? 'bg-gray-600 opacity-50' : 'bg-slate-600 hover:bg-slate-500'}`}
+                >
+                  {selectedItems.size === savedItems.length && savedItems.length > 0 ? '全解除' : '全選択'}
+                </button>
+                <button
+                  onClick={handleExport}
+                  disabled={selectedItems.size === 0}
+                  className={`py-1 px-3 text-white text-xs rounded transition ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
+                >
+                  {selectedItems.size > 0 ? `保存(${selectedItems.size})` : '保存'}
+                </button>
               </div>
               {/* アイテムリスト */}
               <div className="flex-1 overflow-auto bg-gray-950 p-2">
@@ -2219,34 +2166,37 @@ ${content}
                       {filteredItems.map(item => (
                         <div
                           key={item.id}
-                          className={`bg-gray-800 rounded p-2 flex items-center gap-2 hover:bg-gray-700 cursor-pointer transition text-sm ${selectMode && selectedItems.has(item.id) ? 'ring-2 ring-green-500' : ''}`}
-                          onClick={selectMode ? () => toggleSelectItem(item.id) : () => handleLoad(item)}
+                          className={`bg-gray-800 rounded p-2 flex items-center gap-2 hover:bg-gray-700 cursor-pointer transition text-sm ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500' : ''}`}
                         >
-                          {selectMode && (
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedItems.has(item.id) ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
-                              {selectedItems.has(item.id) && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </div>
-                          )}
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-500'}`}
+                            onClick={() => toggleSelectItem(item.id)}
+                          >
+                            {selectedItems.has(item.id) && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
                           {item.starred && (
                             <span className="text-yellow-400 flex-shrink-0 text-sm">★</span>
                           )}
-                          <span className="text-white flex-1 truncate">{item.title}</span>
-                          {!selectMode && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setActionMenu(item); }}
-                              className="p-1 text-gray-400 hover:text-white transition flex-shrink-0"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="5" r="2"/>
-                                <circle cx="12" cy="12" r="2"/>
-                                <circle cx="12" cy="19" r="2"/>
-                              </svg>
-                            </button>
-                          )}
+                          <span
+                            className="text-white flex-1 truncate"
+                            onClick={() => handleLoad(item)}
+                          >
+                            {item.title}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setActionMenu(item); }}
+                            className="p-1 text-gray-400 hover:text-white transition flex-shrink-0"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="12" cy="5" r="2"/>
+                              <circle cx="12" cy="12" r="2"/>
+                              <circle cx="12" cy="19" r="2"/>
+                            </svg>
+                          </button>
                         </div>
                       ))}
                     </div>
