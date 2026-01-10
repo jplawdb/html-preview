@@ -1019,18 +1019,15 @@ ${content}
                     </span>
                   </>
                 ) : (
-                  <>
-                    <h1 className="text-white font-bold text-base">HTML / SVG</h1>
-                    <span className={`px-2 py-0.5 text-xs rounded font-medium ${
-                      currentMode === 'SVG'
-                        ? 'bg-purple-600 text-white'
-                        : currentMode === 'TEXT'
-                        ? 'bg-gray-600 text-white'
-                        : 'bg-blue-600 text-white'
-                    }`}>
-                      {currentMode}
-                    </span>
-                  </>
+                  <span className={`px-3 py-1 text-sm rounded font-bold ${
+                    currentMode === 'SVG'
+                      ? 'bg-purple-600 text-white'
+                      : currentMode === 'TEXT'
+                      ? 'bg-gray-600 text-white'
+                      : 'bg-blue-600 text-white'
+                  }`}>
+                    {currentMode}
+                  </span>
                 )}
               </div>
               {/* hidden file input */}
@@ -1240,6 +1237,31 @@ ${content}
                             className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
                           >
                             {selectedItems.size > 0 ? `${selectedItems.size}件出力` : '出力'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (selectedItems.size > 0) {
+                                setConfirmDialog({
+                                  show: true,
+                                  message: `${selectedItems.size}件を削除しますか？`,
+                                  onConfirm: () => {
+                                    const newItems = savedItems.filter(item => !selectedItems.has(item.id));
+                                    setSavedItems(newItems);
+                                    localStorage.setItem('html-preview-saved', JSON.stringify(newItems));
+                                    setSelectedItems(new Set());
+                                    setSelectMode(false);
+                                    setConfirmDialog({ show: false, message: '', onConfirm: null });
+                                  }
+                                });
+                              }
+                            }}
+                            disabled={selectedItems.size === 0}
+                            className={`p-2 rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50 text-gray-400' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                            title="選択項目を削除"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
                           </button>
                           <button
                             onClick={() => { setSelectMode(false); setSelectedItems(new Set()); }}
