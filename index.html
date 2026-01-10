@@ -73,6 +73,62 @@
       const libraryLongPressTriggered = useRef(false);
       const libraryTouchStart = useRef({ x: 0, y: 0 });
 
+      // タブスワイプ用
+      const tabOrder = ['code', 'preview', 'library'];
+      const swipeState = useRef({ startX: 0, startY: 0, isSwiping: false, isLocked: false });
+
+      // タブスワイプ開始
+      const handleTabSwipeStart = useCallback((e) => {
+        const touch = e.touches[0];
+        swipeState.current = {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          isSwiping: false,
+          isLocked: false
+        };
+      }, []);
+
+      // タブスワイプ移動
+      const handleTabSwipeMove = useCallback((e) => {
+        const state = swipeState.current;
+        if (state.isLocked) return;
+
+        const touch = e.touches[0];
+        const dx = touch.clientX - state.startX;
+        const dy = touch.clientY - state.startY;
+
+        // 最初の移動で方向を判定
+        if (!state.isSwiping && (Math.abs(dx) > 15 || Math.abs(dy) > 15)) {
+          if (Math.abs(dy) > Math.abs(dx)) {
+            state.isLocked = true; // 縦スクロール優先
+            return;
+          }
+          state.isSwiping = true;
+        }
+      }, []);
+
+      // タブスワイプ終了
+      const handleTabSwipeEnd = useCallback((e) => {
+        const state = swipeState.current;
+        if (!state.isSwiping) return;
+
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - state.startX;
+        const threshold = 80; // スワイプ閾値
+
+        const currentIndex = tabOrder.indexOf(activeTab);
+
+        if (dx < -threshold && currentIndex < tabOrder.length - 1) {
+          setActiveTab(tabOrder[currentIndex + 1]);
+          if (navigator.vibrate) navigator.vibrate(10);
+        } else if (dx > threshold && currentIndex > 0) {
+          setActiveTab(tabOrder[currentIndex - 1]);
+          if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        swipeState.current = { startX: 0, startY: 0, isSwiping: false, isLocked: false };
+      }, [activeTab]);
+
       // ライブラリ長押し開始
       const handleLibraryTouchStart = useCallback((e, item) => {
         const touch = e.touches[0];
@@ -1112,8 +1168,13 @@ ${content}
               </div>
             )}
 
-            {/* コンテンツ */}
-            <div className="flex-1 overflow-hidden">
+            {/* コンテンツ（スワイプ対応） */}
+            <div
+              className="flex-1 overflow-hidden relative"
+              onTouchStartCapture={handleTabSwipeStart}
+              onTouchMoveCapture={handleTabSwipeMove}
+              onTouchEndCapture={handleTabSwipeEnd}
+            >
               {activeTab === 'code' ? (
                 <div className="relative w-full h-full">
                   <textarea
