@@ -55,6 +55,8 @@
       const [showStarredOnly, setShowStarredOnly] = useState(false); // ★のみ表示
       const [confirmDialog, setConfirmDialog] = useState({ show: false, message: '', onConfirm: null }); // カスタム確認ダイアログ
       const [showPreviewMenu, setShowPreviewMenu] = useState(false); // プレビューツールバーの三点メニュー
+      const [hideUI, setHideUI] = useState(false); // スクロール時にUI非表示
+      const lastScrollY = React.useRef(0); // 前回のスクロール位置
       const [selectedItems, setSelectedItems] = useState(new Set()); // 選択中のアイテムID
       const [syncModal, setSyncModal] = useState({ show: false, mode: null, code: null, loading: false, error: null }); // 同期モーダル
       const [syncCodeInput, setSyncCodeInput] = useState(''); // 同期コード入力
@@ -331,6 +333,23 @@
         }
       }, []);
 
+      // プレビュースクロール時にUI表示/非表示
+      const handlePreviewScroll = useCallback((e) => {
+        const currentY = e.target.scrollTop;
+        const diff = currentY - lastScrollY.current;
+
+        // 20px以上スクロールで判定
+        if (diff > 20) {
+          // 下スクロール → UI非表示
+          setHideUI(true);
+        } else if (diff < -20) {
+          // 上スクロール → UI表示
+          setHideUI(false);
+        }
+
+        lastScrollY.current = currentY;
+      }, []);
+
       // デバウンス処理（大量テキスト対策）
       useEffect(() => {
         const timer = setTimeout(() => {
@@ -348,6 +367,12 @@
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
       }, []);
+
+      // タブ切り替え時にUI表示をリセット
+      useEffect(() => {
+        setHideUI(false);
+        lastScrollY.current = 0;
+      }, [activeTab]);
 
       // LocalStorageから読み込み
       useEffect(() => {
@@ -1058,9 +1083,9 @@ ${content}
           <div
             className="flex flex-col h-screen bg-gray-900 overflow-hidden"
           >
-            {/* ヘッダー（ファイル読み込み時のみ表示） */}
+            {/* ヘッダー（ファイル読み込み時のみ表示、スクロールで非表示） */}
             {!isFullscreen && loadedFile && (
-            <div className="bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700">
+            <div className={`bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700 transition-all duration-300 ${activeTab === 'preview' && hideUI ? '-translate-y-full h-0 py-0 overflow-hidden' : ''}`}>
               <span className={`px-2 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
                 loadedFile.type === 'PDF'
                   ? 'bg-red-600 text-white'
@@ -1367,19 +1392,29 @@ ${content}
                       <div
                         className="w-full h-full bg-gray-100 overflow-auto p-4"
                         style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                        onScroll={handlePreviewScroll}
                         dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
                       />
                     ) : currentMode === 'TEXT' ? (
-                      <div className="w-full h-full bg-white overflow-auto p-4">
+                      <div
+                        className="w-full h-full bg-white overflow-auto p-4"
+                        onScroll={handlePreviewScroll}
+                      >
                         <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
                       </div>
                     ) : (
-                      <iframe
-                        srcDoc={previewCode}
-                        title="Preview"
-                        className="w-full h-full border-0 bg-white"
-                        sandbox="allow-scripts"
-                      />
+                      <div
+                        className="w-full h-full overflow-auto"
+                        onScroll={handlePreviewScroll}
+                      >
+                        <iframe
+                          srcDoc={previewCode}
+                          title="Preview"
+                          className="w-full h-full border-0 bg-white"
+                          style={{ minHeight: '100%' }}
+                          sandbox="allow-scripts"
+                        />
+                      </div>
                     )}
                     {/* 最大化時の閉じるボタン */}
                     {isFullscreen && (
@@ -1393,9 +1428,9 @@ ${content}
                       </button>
                     )}
                   </div>
-                  {/* 下部ツールバー（最大化時は非表示） */}
+                  {/* 下部ツールバー（最大化時・スクロール時は非表示） */}
                   {!isFullscreen && (
-                    <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-t border-gray-700">
+                    <div className={`flex items-center justify-between px-2 py-1.5 bg-gray-800 border-t border-gray-700 transition-all duration-300 ${hideUI ? 'translate-y-full h-0 py-0 overflow-hidden' : ''}`}>
                       <div className="flex gap-1">
                         {/* 登録（一番左） */}
                         <button
@@ -1532,9 +1567,9 @@ ${content}
               )}
             </div>
 
-            {/* フッタータブバー */}
+            {/* フッタータブバー（スクロールで非表示） */}
             {!isFullscreen && activeTab !== 'code' && (
-            <div className="flex bg-gray-800 border-t border-gray-700">
+            <div className={`flex bg-gray-800 border-t border-gray-700 transition-all duration-300 ${activeTab === 'preview' && hideUI ? 'translate-y-full h-0 overflow-hidden' : ''}`}>
               <button
                 onClick={() => setActiveTab('library')}
                 className={`flex-1 py-3 text-sm font-medium transition ${
