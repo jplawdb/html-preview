@@ -1499,6 +1499,7 @@ ${content}
       return (
         <div className="flex flex-col h-screen bg-gray-900">
           {/* ヘッダー */}
+          {!isFullscreen && (
           <div className="bg-gray-800 px-6 py-3 flex items-center justify-between border-b border-gray-700">
             <div className="flex items-center gap-3">
               <h1 className="text-white font-bold text-lg">HTML / SVG プレビューツール</h1>
@@ -1574,6 +1575,7 @@ ${content}
               </button>
             </div>
           </div>
+          )}
 
           {/* 3カラムコンテンツ */}
           <div className="flex-1 flex overflow-hidden">
@@ -1594,25 +1596,21 @@ ${content}
             )}
 
             {/* 中央: プレビュー */}
-            <div className={`${isFullscreen ? 'w-full' : 'w-1/3'} flex flex-col border-r border-gray-700 relative`}>
+            <div className={`${isFullscreen ? 'w-full h-full' : 'w-1/3'} flex flex-col ${isFullscreen ? '' : 'border-r border-gray-700'} relative`}>
+              {!isFullscreen && (
               <div className="bg-gray-800 px-4 py-2 text-gray-400 text-sm font-medium border-b border-gray-700 flex items-center justify-between">
-                <span>プレビュー {isFullscreen && '（最大化中）'}</span>
+                <span>プレビュー</span>
                 <button
-                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  onClick={() => setIsFullscreen(true)}
                   className="p-1 hover:bg-gray-700 rounded transition"
-                  title={isFullscreen ? '元に戻す' : '最大化'}
+                  title="最大化"
                 >
-                  {isFullscreen ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                    </svg>
-                  )}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
                 </button>
               </div>
+              )}
               <div className="flex-1 overflow-hidden">
                 {currentMode === 'SVG' ? (
                   <div
@@ -1633,6 +1631,18 @@ ${content}
                   />
                 )}
               </div>
+              {/* フルスクリーン解除ボタン */}
+              {isFullscreen && (
+                <button
+                  onClick={() => setIsFullscreen(false)}
+                  className="absolute top-4 right-4 p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg shadow-lg transition z-50"
+                  title="元に戻す (ESC)"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* 右: ライブラリ */}
