@@ -350,6 +350,13 @@
         lastScrollY.current = currentY;
       }, []);
 
+      // プレビューエリアタップでUI表示/非表示トグル（iframe用）
+      const handlePreviewTap = useCallback((e) => {
+        // ダブルタップ的な動作を防ぐため、ボタン等のクリックは除外
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        setHideUI(prev => !prev);
+      }, []);
+
       // デバウンス処理（大量テキスト対策）
       useEffect(() => {
         const timer = setTimeout(() => {
@@ -1403,17 +1410,31 @@ ${content}
                         <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
                       </div>
                     ) : (
-                      <div
-                        className="w-full h-full overflow-auto"
-                        onScroll={handlePreviewScroll}
-                      >
+                      <div className="w-full h-full relative">
                         <iframe
                           srcDoc={previewCode}
                           title="Preview"
                           className="w-full h-full border-0 bg-white"
-                          style={{ minHeight: '100%' }}
                           sandbox="allow-scripts"
                         />
+                        {/* タップオーバーレイ（UI非表示時のみ表示） */}
+                        {hideUI && (
+                          <div
+                            className="absolute inset-0 bg-transparent"
+                            onClick={handlePreviewTap}
+                          >
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 text-white text-xs rounded-full">
+                              タップでUI表示
+                            </div>
+                          </div>
+                        )}
+                        {/* UI表示時：上部タップエリア */}
+                        {!hideUI && (
+                          <div
+                            className="absolute top-0 left-0 right-0 h-12 bg-transparent"
+                            onClick={handlePreviewTap}
+                          />
+                        )}
                       </div>
                     )}
                     {/* 最大化時の閉じるボタン */}
