@@ -1480,17 +1480,6 @@ ${content}
                         )}
                       </div>
                     )}
-                    {/* 最大化時の閉じるボタン */}
-                    {isFullscreen && (
-                      <button
-                        onClick={() => setIsFullscreen(false)}
-                        className="absolute bottom-4 right-4 p-3 bg-gray-800/90 hover:bg-gray-700 text-white rounded-full shadow-lg transition active:scale-95 z-10"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
                   </div>
                   {/* 下部ツールバー（最大化時・スクロール時は非表示） */}
                   {!isFullscreen && (
@@ -1507,7 +1496,43 @@ ${content}
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                           </svg>
                         </button>
-                        {/* 三点メニュー（共有・ダウンロード・PNG・印刷） */}
+                      </div>
+                      <div className="flex gap-1">
+                        {/* クリア */}
+                        <button
+                          onClick={() => {
+                            if (code) {
+                              setConfirmDialog({
+                                show: true,
+                                message: 'クリアしますか？',
+                                onConfirm: () => {
+                                  setCode('');
+                                  setLoadedFile(null);
+                                  setConfirmDialog({ show: false, message: '', onConfirm: null });
+                                }
+                              });
+                            }
+                          }}
+                          disabled={!code}
+                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-700 text-gray-500'}`}
+                          title="クリア"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                        {/* コード表示 */}
+                        <button
+                          onClick={() => setActiveTab('code')}
+                          disabled={!code}
+                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gray-700 text-gray-500'}`}
+                          title="コード表示"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                          </svg>
+                        </button>
+                        {/* 三点メニュー（共有・ダウンロード・PNG・印刷）- 一番右 */}
                         <div className="relative">
                           <button
                             onClick={() => setShowPreviewMenu(!showPreviewMenu)}
@@ -1578,52 +1603,6 @@ ${content}
                             </>
                           )}
                         </div>
-                      </div>
-                      <div className="flex gap-1">
-                        {/* クリア */}
-                        <button
-                          onClick={() => {
-                            if (code) {
-                              setConfirmDialog({
-                                show: true,
-                                message: 'クリアしますか？',
-                                onConfirm: () => {
-                                  setCode('');
-                                  setLoadedFile(null);
-                                  setConfirmDialog({ show: false, message: '', onConfirm: null });
-                                }
-                              });
-                            }
-                          }}
-                          disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="クリア"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                        {/* コード表示 */}
-                        <button
-                          onClick={() => setActiveTab('code')}
-                          disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="コード表示"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                          </svg>
-                        </button>
-                        {/* 最大化 */}
-                        <button
-                          onClick={() => setIsFullscreen(!isFullscreen)}
-                          className="p-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition active:scale-95"
-                          title="最大化"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                          </svg>
-                        </button>
                       </div>
                     </div>
                   )}
