@@ -1033,14 +1033,62 @@ ${content}
                   </>
                 )}
               </div>
-              {/* hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,.html,.htm,.svg,.pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+              <div className="flex gap-2">
+                {/* hidden file input - コードタブのボタンから参照 */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.html,.htm,.svg,.pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={handleSave}
+                  className="p-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg transition active:scale-95"
+                  title="登録"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                </button>
+                {currentMode === 'SVG' && (
+                  <button
+                    onClick={handleDownloadPng}
+                    className="p-2 bg-pink-600 hover:bg-pink-500 text-white rounded-lg transition active:scale-95"
+                    title="PNG変換"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  onClick={handlePrint}
+                  className="p-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition active:scale-95"
+                  title="印刷"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleShare}
+                  disabled={isShortening}
+                  className={`p-2 ${isShortening ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-500'} text-white rounded-lg transition active:scale-95`}
+                  title="URL共有"
+                >
+                  {isShortening ? (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
             )}
 
@@ -1183,131 +1231,119 @@ ${content}
                   </button>
                 </div>
               ) : activeTab === 'library' ? (
-                <div className="flex flex-col w-full h-full bg-gray-950">
-                  {/* 上部ツールバー */}
-                  <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-b border-gray-700">
-                    <div className="flex gap-1">
-                      {/* 受信 */}
-                      <button
-                        onClick={openSyncInput}
-                        className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition active:scale-95"
-                        title="同期受信"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </button>
-                      {/* 送信 */}
-                      <button
-                        onClick={generateSyncCode}
-                        className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition active:scale-95"
-                        title="同期送信"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                        </svg>
-                      </button>
-                      {/* JSONインポート */}
-                      <input
-                        ref={importInputRef}
-                        type="file"
-                        accept=".json"
-                        onChange={handleImport}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => importInputRef.current?.click()}
-                        className="p-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition active:scale-95"
-                        title="JSONインポート"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="flex gap-1">
-                      {selectMode ? (
-                        <>
-                          <button
-                            onClick={toggleSelectAll}
-                            className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white text-xs rounded-lg transition active:scale-95"
-                          >
-                            {selectedItems.size === savedItems.length ? '全解除' : '全選択'}
-                          </button>
-                          <button
-                            onClick={handleExport}
-                            disabled={selectedItems.size === 0}
-                            className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
-                          >
-                            {selectedItems.size > 0 ? `${selectedItems.size}件出力` : '出力'}
-                          </button>
-                          <button
-                            onClick={() => { setSelectMode(false); setSelectedItems(new Set()); }}
-                            className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition active:scale-95"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setSelectMode(true)}
-                          className="p-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition active:scale-95"
-                          title="選択モード"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
+                <div className="w-full h-full bg-gray-950 overflow-auto p-4">
+                  {/* 同期ボタン */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={openSyncInput}
+                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                      受信
+                    </button>
+                    <button
+                      onClick={generateSyncCode}
+                      className="flex-1 py-3 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg transition active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      送信
+                    </button>
                   </div>
-                  {/* アイテム一覧 */}
-                  <div className="flex-1 overflow-auto p-4">
-                  {(() => {
-                    // ここは既存のコード構造を維持（空の場合の表示など）
-                    const filtered = savedItems
-                      .filter(item => {
-                        if (showStarredOnly && !item.starred) return false;
-                        if (!searchQuery) return true;
-                        const q = searchQuery.toLowerCase();
-                        return item.title.toLowerCase().includes(q) ||
-                               item.code.toLowerCase().includes(q);
-                      })
-                      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
-
-                    if (filtered.length === 0) {
-                      return (
-                        <div className="flex flex-col items-center justify-center h-32 text-gray-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  {/* エクスポート/インポートボタン */}
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      ref={importInputRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleImport}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => importInputRef.current?.click()}
+                      className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      JSON
+                    </button>
+                    {selectMode ? (
+                      <>
+                        <button
+                          onClick={toggleSelectAll}
+                          className="py-2 px-3 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition active:scale-95"
+                        >
+                          {selectedItems.size === savedItems.length ? '全解除' : '全選択'}
+                        </button>
+                        <button
+                          onClick={handleExport}
+                          disabled={selectedItems.size === 0}
+                          className={`flex-1 py-2 text-white text-sm rounded-lg transition active:scale-95 flex items-center justify-center gap-2 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                           </svg>
-                          <p className="text-sm">{searchQuery || showStarredOnly ? '該当するアイテムがありません' : 'ライブラリは空です'}</p>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="space-y-2">
-                      {filtered.map((item) => (
+                          {selectedItems.size > 0 ? `${selectedItems.size}件` : '出力'}
+                        </button>
+                        <button
+                          onClick={() => { setSelectMode(false); setSelectedItems(new Set()); }}
+                          className="py-2 px-3 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition active:scale-95"
+                        >
+                          ✕
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setSelectMode(true)}
+                        className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        選択
+                      </button>
+                    )}
+                  </div>
+                  {savedItems.length === 0 ? (
+                    <div className="text-gray-500 text-center py-8">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                      <p>まだ登録がありません</p>
+                      <p className="text-sm mt-1">コードを入力して登録ボタンを押してね</p>
+                    </div>
+                  ) : (() => {
+                    const filteredItems = savedItems.filter(item => {
+                      if (showStarredOnly && !item.starred) return false;
+                      if (!searchQuery.trim()) return true;
+                      const query = searchQuery.toLowerCase();
+                      return item.title.toLowerCase().includes(query) ||
+                             item.code.toLowerCase().includes(query) ||
+                             item.type.toLowerCase().includes(query);
+                    });
+                    return filteredItems.length === 0 ? (
+                      <div className="text-gray-500 text-center py-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <p>{showStarredOnly ? '★付きの項目がありません' : `「${searchQuery}」に一致する項目がありません`}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {filteredItems.map(item => (
                         <div
                           key={item.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                            selectMode
-                              ? selectedItems.has(item.id)
-                                ? 'bg-blue-900/50 border border-blue-500'
-                                : 'bg-gray-800 border border-transparent'
-                              : 'bg-gray-800 active:bg-gray-700'
-                          }`}
-                          onClick={selectMode ? () => toggleItemSelection(item.id) : undefined}
+                          className={`bg-gray-800 rounded-lg p-3 flex items-center gap-3 ${selectMode && selectedItems.has(item.id) ? 'ring-2 ring-green-500' : ''}`}
+                          onClick={selectMode ? () => toggleSelectItem(item.id) : undefined}
                         >
                           {selectMode && (
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                              selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-500'
-                            }`}>
+                            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 ${selectedItems.has(item.id) ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
                               {selectedItems.has(item.id) && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
@@ -1321,22 +1357,15 @@ ${content}
                             onTouchMove={handleLibraryTouchMove}
                             onTouchCancel={handleLibraryTouchEnd}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                item.type === 'SVG' ? 'bg-purple-600' : 'bg-blue-600'
-                              } text-white`}>
-                                {item.type}
-                              </span>
+                            <div className="flex items-start gap-2">
                               {item.starred && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                </svg>
+                                <span className="text-yellow-400 flex-shrink-0">★</span>
                               )}
-                              <h3 className="text-white font-medium text-sm truncate">{item.title}</h3>
+                              <span className="text-white font-medium break-words">{item.title}</span>
                             </div>
-                            <p className="text-gray-500 text-xs mt-1">
-                              {new Date(item.updatedAt || item.createdAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                            <div className="text-gray-500 text-xs mt-1">
+                              {new Date(item.createdAt).toLocaleDateString('ja-JP')}
+                            </div>
                           </div>
                           {!selectMode && (
                             <button
@@ -1358,149 +1387,77 @@ ${content}
                       </div>
                     );
                   })()}
-                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col w-full h-full">
-                  {/* 上部ツールバー（最大化時は非表示） */}
-                  {!isFullscreen && (
-                    <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-b border-gray-700">
-                      <div className="flex gap-1">
-                        {/* ダウンロード */}
-                        <button
-                          onClick={handleDownload}
-                          disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="ダウンロード"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                        </button>
-                        {/* PNG（SVGモードのみ） */}
-                        {currentMode === 'SVG' && (
-                          <button
-                            onClick={handleDownloadPng}
-                            disabled={!code}
-                            className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-pink-600 hover:bg-pink-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                            title="PNG変換"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </button>
-                        )}
-                        {/* 印刷 */}
-                        <button
-                          onClick={handlePrint}
-                          disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-orange-600 hover:bg-orange-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="印刷"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                          </svg>
-                        </button>
-                        {/* 共有 */}
-                        <button
-                          onClick={handleShare}
-                          disabled={!code || isShortening}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code && !isShortening ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="URL共有"
-                        >
-                          {isShortening ? (
-                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                            </svg>
-                          )}
-                        </button>
-                        {/* 登録 */}
-                        <button
-                          onClick={handleSave}
-                          disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-yellow-600 hover:bg-yellow-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="ライブラリに登録"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="flex gap-1">
-                        {/* クリア */}
-                        <button
-                          onClick={() => {
-                            if (code) {
-                              setConfirmDialog({
-                                show: true,
-                                message: 'クリアしますか？',
-                                onConfirm: () => {
-                                  setCode('');
-                                  setLoadedFile(null);
-                                  setActiveTab('code');
-                                  setConfirmDialog({ show: false, message: '', onConfirm: null });
-                                }
-                              });
-                            }
-                          }}
-                          disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-700 text-gray-500'}`}
-                          title="クリア"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                        {/* 最大化 */}
-                        <button
-                          onClick={() => setIsFullscreen(!isFullscreen)}
-                          className="p-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition active:scale-95"
-                          title="最大化"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                          </svg>
-                        </button>
-                      </div>
+                <div className="relative w-full h-full">
+                  {currentMode === 'SVG' ? (
+                    <div
+                      className="w-full h-full bg-gray-100 overflow-auto p-4"
+                      style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                      dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
+                    />
+                  ) : currentMode === 'TEXT' ? (
+                    <div className="w-full h-full bg-white overflow-auto p-4">
+                      <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
                     </div>
+                  ) : (
+                    <iframe
+                      srcDoc={previewCode}
+                      title="Preview"
+                      className="w-full h-full border-0 bg-white"
+                      sandbox="allow-scripts"
+                    />
                   )}
-                  {/* プレビューエリア */}
-                  <div className="relative flex-1 overflow-hidden">
-                    {currentMode === 'SVG' ? (
-                      <div
-                        className="w-full h-full bg-gray-100 overflow-auto p-4"
-                        style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-                        dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
-                      />
-                    ) : currentMode === 'TEXT' ? (
-                      <div className="w-full h-full bg-white overflow-auto p-4">
-                        <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
-                      </div>
+                  {/* 右上：最大化ボタン */}
+                  <button
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className="absolute top-2 right-2 p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg transition active:scale-95 z-10"
+                  >
+                    {isFullscreen ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     ) : (
-                      <iframe
-                        srcDoc={previewCode}
-                        title="Preview"
-                        className="w-full h-full border-0 bg-white"
-                        sandbox="allow-scripts"
-                      />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
                     )}
-                    {/* 最大化時の閉じるボタン */}
-                    {isFullscreen && (
-                      <button
-                        onClick={() => setIsFullscreen(false)}
-                        className="absolute top-2 right-2 p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg transition active:scale-95 z-10"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  </button>
+                  {/* 左上：ダウンロードボタン（最大化時は非表示） */}
+                  {code && !isFullscreen && (
+                    <button
+                      onClick={handleDownload}
+                      className="absolute top-2 left-2 p-2 bg-green-600/80 hover:bg-green-500 text-white rounded-lg transition active:scale-95 z-10"
+                      title="ダウンロード"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                    </button>
+                  )}
+                  {/* 左下：クリアボタン（確認付き、最大化時は非表示） */}
+                  {code && !isFullscreen && (
+                    <button
+                      onClick={() => {
+                        setConfirmDialog({
+                          show: true,
+                          message: 'クリアしますか？',
+                          onConfirm: () => {
+                            setCode('');
+                            setLoadedFile(null);
+                            setActiveTab('code');
+                            setConfirmDialog({ show: false, message: '', onConfirm: null });
+                          }
+                        });
+                      }}
+                      className="absolute bottom-4 left-4 p-3 bg-gray-700/80 hover:bg-gray-600 text-gray-300 rounded-full shadow-lg transition active:scale-95 z-10"
+                      title="クリア"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1522,31 +1479,6 @@ ${content}
                 </svg>
               )}
             </button>
-            )}
-
-            {/* カスタム確認ダイアログ（ブラウザ風） */}
-            {confirmDialog.show && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
-                <div className="bg-white rounded-lg shadow-xl mx-4 max-w-sm w-full overflow-hidden">
-                  <div className="px-4 py-3 text-gray-900 text-sm text-center">
-                    {confirmDialog.message}
-                  </div>
-                  <div className="flex border-t border-gray-200">
-                    <button
-                      onClick={() => setConfirmDialog({ show: false, message: '', onConfirm: null })}
-                      className="flex-1 py-3 text-blue-600 font-medium text-base border-r border-gray-200 active:bg-gray-100"
-                    >
-                      キャンセル
-                    </button>
-                    <button
-                      onClick={confirmDialog.onConfirm}
-                      className="flex-1 py-3 text-blue-600 font-medium text-base active:bg-gray-100"
-                    >
-                      OK
-                    </button>
-                  </div>
-                </div>
-              </div>
             )}
 
             {/* カスタム確認ダイアログ（ブラウザ風） */}
