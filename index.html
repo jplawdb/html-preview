@@ -1194,16 +1194,6 @@ ${content}
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                         </svg>
                       </button>
-                      {/* 送信 */}
-                      <button
-                        onClick={generateSyncCode}
-                        className="p-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition active:scale-95"
-                        title="同期送信"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                        </svg>
-                      </button>
                       {/* JSONインポート */}
                       <input
                         ref={importInputRef}
@@ -1237,6 +1227,16 @@ ${content}
                             className={`px-3 py-2 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
                           >
                             {selectedItems.size > 0 ? `${selectedItems.size}件出力` : '出力'}
+                          </button>
+                          <button
+                            onClick={generateSyncCode}
+                            disabled={selectedItems.size === 0}
+                            className={`p-2 rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50 text-gray-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
+                            title="選択項目を送信"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                            </svg>
                           </button>
                           <button
                             onClick={() => {
