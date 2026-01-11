@@ -16,6 +16,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     /* タッチデバイスでのスクロール改善 */
     textarea {
@@ -581,23 +583,87 @@
         setActiveTab('preview');
       }, []);
 
-      // エクスポート機能（JSONダウンロード）
-      const handleExport = useCallback(() => {
+      // SVGをHTMLでラップする関数
+      const wrapSvgInHtml = useCallback((svgCode, title) => {
+        return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title || 'SVG'}</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; background: #f5f5f5; }
+    svg { max-width: 100%; max-height: 100vh; width: auto; height: auto; }
+  </style>
+</head>
+<body>
+${svgCode}
+</body>
+</html>`;
+      }, []);
+
+      // ファイル名をサニタイズ
+      const sanitizeFilename = useCallback((name) => {
+        return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').slice(0, 100);
+      }, []);
+
+      // エクスポート機能（デスクトップ: HTML ZIP / モバイル: JSON）
+      const handleExport = useCallback(async () => {
         const itemsToExport = savedItems.filter(item => selectedItems.has(item.id));
         if (itemsToExport.length === 0) return;
-        const data = JSON.stringify(itemsToExport, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `html-preview-library-${new Date().toISOString().slice(0,10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+
+        // デスクトップ: ZIP with individual HTML files
+        if (!isMobile) {
+          const zip = new JSZip();
+          const usedNames = new Set();
+
+          itemsToExport.forEach(item => {
+            let content = item.code;
+            let baseName = sanitizeFilename(item.title || 'untitled');
+
+            // SVGの場合はHTMLでラップ
+            if (item.type === 'svg' || (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml'))) {
+              content = wrapSvgInHtml(content, item.title);
+            }
+
+            // 重複ファイル名を回避
+            let fileName = `${baseName}.html`;
+            let counter = 1;
+            while (usedNames.has(fileName)) {
+              fileName = `${baseName}_${counter}.html`;
+              counter++;
+            }
+            usedNames.add(fileName);
+
+            zip.file(fileName, content);
+          });
+
+          const blob = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `html-preview-${new Date().toISOString().slice(0,10)}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          // モバイル: JSON（従来通り）
+          const data = JSON.stringify(itemsToExport, null, 2);
+          const blob = new Blob([data], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `html-preview-library-${new Date().toISOString().slice(0,10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+
         // エクスポート後は選択解除
         setSelectedItems(new Set());
-      }, [savedItems, selectedItems]);
+      }, [savedItems, selectedItems, isMobile, wrapSvgInHtml, sanitizeFilename]);
 
       // アイテム選択トグル
       const toggleSelectItem = useCallback((id) => {
@@ -805,6 +871,70 @@
         // SVGが含まれているかチェック
         const hasSvg = /<svg[\s>]/i.test(trimmed);
 
+        // Markdown検出（HTML/SVGでない場合）- #や*が2回以上あればMD
+        const checkMarkdown = (text) => {
+          // 見出し # が2回以上
+          const headings = text.match(/^#{1,6}\s+/gm);
+          if (headings && headings.length >= 2) return true;
+          // * または ** が2回以上
+          const asterisks = text.match(/\*+[^*\n]+\*+/g);
+          if (asterisks && asterisks.length >= 2) return true;
+          // リスト - が2回以上
+          const lists = text.match(/^[\-\*\+]\s+/gm);
+          if (lists && lists.length >= 2) return true;
+          // コードブロック ```
+          if (/```/.test(text)) return true;
+          // 見出し1つ + 他の要素の組み合わせ
+          const hasHeading = /^#{1,6}\s+/m.test(text);
+          const hasList = /^[\-\*\+]\s+/m.test(text);
+          const hasBold = /\*\*[^*]+\*\*/.test(text);
+          const hasLink = /\[[^\]]+\]\([^)]+\)/.test(text);
+          const hasQuote = /^>\s+/m.test(text);
+          // 2つ以上のMD要素があればMD
+          const count = [hasHeading, hasList, hasBold, hasLink, hasQuote].filter(Boolean).length;
+          if (count >= 2) return true;
+          return false;
+        };
+
+        // Markdownモード
+        if (!hasHtmlDoc && !hasSvg && !trimmed.startsWith('<') && checkMarkdown(trimmed)) {
+          const html = marked.parse(trimmed);
+          return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      color: #333;
+    }
+    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; }
+    h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+    h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+    code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #f4f4f4; padding: 16px; overflow-x: auto; border-radius: 6px; }
+    pre code { background: none; padding: 0; }
+    blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding-left: 16px; color: #666; }
+    ul, ol { padding-left: 2em; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f4f4f4; }
+    img { max-width: 100%; }
+    hr { border: none; border-top: 1px solid #eee; margin: 2em 0; }
+  </style>
+</head>
+<body onscroll="${scrollHandler}">
+${html}
+</body>
+</html>`;
+        }
+
         // SVGモード（HTMLドキュメントがない場合のみ）
         if (hasSvg && !hasHtmlDoc) {
           const svgOnly = extractSvgTag(trimmed);
@@ -858,6 +988,30 @@
         return html;
       }, [debouncedCode]);
 
+      // Markdown検出関数 - #や*が2回以上あればMD
+      const isMarkdown = useCallback((text) => {
+        // 見出し # が2回以上
+        const headings = text.match(/^#{1,6}\s+/gm);
+        if (headings && headings.length >= 2) return true;
+        // * または ** が2回以上
+        const asterisks = text.match(/\*+[^*\n]+\*+/g);
+        if (asterisks && asterisks.length >= 2) return true;
+        // リスト - が2回以上
+        const lists = text.match(/^[\-\*\+]\s+/gm);
+        if (lists && lists.length >= 2) return true;
+        // コードブロック ```
+        if (/```/.test(text)) return true;
+        // 2つ以上のMD要素の組み合わせ
+        const hasHeading = /^#{1,6}\s+/m.test(text);
+        const hasList = /^[\-\*\+]\s+/m.test(text);
+        const hasBold = /\*\*[^*]+\*\*/.test(text);
+        const hasLink = /\[[^\]]+\]\([^)]+\)/.test(text);
+        const hasQuote = /^>\s+/m.test(text);
+        const count = [hasHeading, hasList, hasBold, hasLink, hasQuote].filter(Boolean).length;
+        if (count >= 2) return true;
+        return false;
+      }, []);
+
       // 現在のモードを判定（コード内のHTML/SVGを検出、前後の会話文を無視）
       const currentMode = useMemo(() => {
         const trimmed = debouncedCode.trim();
@@ -874,8 +1028,11 @@
         // その他のHTMLタグで始まる
         if (trimmed.startsWith('<')) return 'HTML';
 
+        // Markdown検出
+        if (isMarkdown(trimmed)) return 'MARKDOWN';
+
         return 'TEXT';
-      }, [debouncedCode]);
+      }, [debouncedCode, isMarkdown]);
 
       // マウスイベント（デスクトップ用）
       const handleMouseDown = useCallback((e) => {
