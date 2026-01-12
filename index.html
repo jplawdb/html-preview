@@ -1904,7 +1904,7 @@ ${content}
                         style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
                         onScroll={handlePreviewScroll}
                       >
-                        <div style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${10000 / zoomLevel}%` }} dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }} />
+                        <div style={{ transform: `scale(${zoomLevel * 0.8 / 100})`, transformOrigin: 'top left', width: `${12500 / zoomLevel}%` }} dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }} />
                       </div>
                     ) : currentMode === 'TEXT' ? (
                       <textarea
@@ -1913,7 +1913,7 @@ ${content}
                         onScroll={handlePreviewScroll}
                         className="w-full h-full p-4 resize-none border-0 outline-none font-sans leading-relaxed"
                         placeholder="テキストを入力または編集..."
-                        style={{ userSelect: 'text', WebkitUserSelect: 'text', fontSize: `${zoomLevel}%`, backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                        style={{ userSelect: 'text', WebkitUserSelect: 'text', fontSize: `${zoomLevel * 0.8}%`, backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                       />
                     ) : (
                       <div className="w-full h-full relative overflow-auto">
@@ -1922,7 +1922,7 @@ ${content}
                           title="Preview"
                           className="border-0 bg-white"
                           sandbox="allow-scripts"
-                          style={{ width: `${10000 / zoomLevel}%`, height: `${10000 / zoomLevel}%`, transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left' }}
+                          style={{ width: `${12500 / zoomLevel}%`, height: `${12500 / zoomLevel}%`, transform: `scale(${zoomLevel * 0.8 / 100})`, transformOrigin: 'top left' }}
                         />
                         {/* タップオーバーレイ（UI非表示時のみ表示、pointer-events-noneでスクロール通過） */}
                         {hideUI && (
@@ -1985,8 +1985,8 @@ ${content}
                           {zoomLevel}%
                         </button>
                         <button
-                          onClick={() => setZoomLevel(z => Math.min(200, z + 25))}
-                          disabled={zoomLevel >= 200}
+                          onClick={() => setZoomLevel(z => Math.min(150, z + 25))}
+                          disabled={zoomLevel >= 150}
                           className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
                           style={{ color: 'var(--text-secondary)' }}
                           title="拡大"
