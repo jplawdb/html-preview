@@ -1693,7 +1693,7 @@ ${content}
                   </div>
                   {/* 下部ツールバー（最大化時・スクロール時は非表示） */}
                   {!isFullscreen && (
-                    <div className={`fixed left-0 right-0 z-20 flex items-center justify-between px-2 py-1.5 bg-gray-800 border-t border-gray-700 transition-transform duration-300 ${hideUI ? 'translate-y-full' : 'translate-y-0'}`} style={{ bottom: '48px' }}>
+                    <div className={`fixed left-0 right-0 z-20 flex items-center justify-between px-2 py-1.5 bg-gray-800 border-t border-gray-700 transition-transform duration-300`} style={{ bottom: '48px', transform: hideUI ? 'translateY(calc(100% + 48px))' : 'translateY(0)' }}>
                       <div className="flex gap-1">
                         {/* 登録（一番左） */}
                         <button
