@@ -18,7 +18,6 @@
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     /* テーマ用CSS変数 */
     :root {
@@ -60,21 +59,27 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
     }
-    /* 長押し時のかわいいピクトグラム降下アニメーション */
-    @keyframes picto-fall {
-      0% { transform: translateY(-50px) rotate(0deg) scale(0); opacity: 0; }
-      10% { transform: translateY(0) rotate(10deg) scale(1.2); opacity: 1; }
-      30% { transform: translateY(30vh) rotate(-15deg) scale(1); opacity: 1; }
-      60% { transform: translateY(60vh) rotate(20deg) scale(0.9); opacity: 0.8; }
-      100% { transform: translateY(100vh) rotate(-10deg) scale(0.5); opacity: 0; }
+    /* 長押し時の人型ピクトグラムよちよち降下アニメーション */
+    @keyframes yochiyochi-fall {
+      0% { transform: translateY(-50px) translateX(0) rotate(-5deg); opacity: 0; }
+      10% { transform: translateY(10vh) translateX(-8px) rotate(5deg); opacity: 1; }
+      20% { transform: translateY(20vh) translateX(8px) rotate(-5deg); opacity: 1; }
+      30% { transform: translateY(30vh) translateX(-8px) rotate(5deg); opacity: 1; }
+      40% { transform: translateY(40vh) translateX(8px) rotate(-5deg); opacity: 1; }
+      50% { transform: translateY(50vh) translateX(-8px) rotate(5deg); opacity: 1; }
+      60% { transform: translateY(60vh) translateX(8px) rotate(-5deg); opacity: 0.9; }
+      70% { transform: translateY(70vh) translateX(-8px) rotate(5deg); opacity: 0.7; }
+      80% { transform: translateY(80vh) translateX(8px) rotate(-5deg); opacity: 0.5; }
+      90% { transform: translateY(90vh) translateX(-8px) rotate(5deg); opacity: 0.3; }
+      100% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
     }
     .falling-picto {
       position: fixed;
       top: 0;
-      font-size: 2rem;
+      font-size: 1.8rem;
       z-index: 9999;
       pointer-events: none;
-      animation: picto-fall 1.5s ease-in forwards;
+      animation: yochiyochi-fall 2.5s linear forwards;
     }
     </style>
 </head>
@@ -135,10 +140,10 @@
       // サイドバースワイプ用
       const swipeState = useRef({ startX: 0, startY: 0, isSwiping: false, isLocked: false });
       const EDGE_WIDTH = 30; // 左端30pxからサイドバーを開く
-      // ☰ボタン長押しスクショ用
+      // ☰ボタン長押しピクトグラム用
       const hamburgerLongPressTimer = useRef(null);
       const hamburgerLongPressTriggered = useRef(false);
-      const previewRef = useRef(null);
+      const hamburgerPictoInterval = useRef(null);
 
       // サイドバースワイプ開始（左端からのスワイプでサイドバーを開く）
       const handleSidebarSwipeStart = useCallback((e) => {
@@ -1342,94 +1347,18 @@ ${html}
         }
       }, [code, currentMode]);
 
-      // かわいいピクトグラム降下アニメーション
-      const spawnFallingPictos = useCallback(() => {
-        const pictos = ['📸', '📷', '🖼️', '✨', '🌟', '💫', '⭐', '🎬'];
-        const count = 8 + Math.floor(Math.random() * 5); // 8-12個
-
-        for (let i = 0; i < count; i++) {
-          setTimeout(() => {
-            const el = document.createElement('div');
-            el.className = 'falling-picto';
-            el.textContent = pictos[Math.floor(Math.random() * pictos.length)];
-            el.style.left = `${10 + Math.random() * 80}%`;
-            el.style.animationDuration = `${1.2 + Math.random() * 0.8}s`;
-            el.style.animationDelay = `${Math.random() * 0.2}s`;
-            document.body.appendChild(el);
-
-            // アニメーション終了後に削除
-            setTimeout(() => el.remove(), 2500);
-          }, i * 80); // 少しずつ時間差で出現
-        }
+      // 人型ピクトグラムを1体出現させる（よちよち歩き）
+      const spawnFallingPicto = useCallback(() => {
+        const pictos = ['🚶', '🚶‍♂️', '🚶‍♀️', '🏃', '🏃‍♂️', '🏃‍♀️', '🧍', '🧍‍♂️', '🧍‍♀️'];
+        const el = document.createElement('div');
+        el.className = 'falling-picto';
+        el.textContent = pictos[Math.floor(Math.random() * pictos.length)];
+        el.style.left = `${10 + Math.random() * 80}%`;
+        el.style.animationDuration = `${2.0 + Math.random() * 1.0}s`;
+        document.body.appendChild(el);
+        // アニメーション終了後に削除
+        setTimeout(() => el.remove(), 3500);
       }, []);
-
-      // 長押しスクリーンショット
-      const handleScreenshot = useCallback(async () => {
-        // かわいいピクトグラムを降らせる（コンテンツなくても演出は見せる）
-        spawnFallingPictos();
-
-        if (!code) {
-          showToast('コンテンツがありません 📭', 2000);
-          return;
-        }
-
-        showToast('📸 スクショ保存中...', 1500);
-
-        try {
-          // SVGモードは既存の高品質PNG変換を使用
-          if (currentMode === 'SVG') {
-            handleDownloadPng();
-            return;
-          }
-
-          // TEXT/HTMLモードはhtml2canvasを使用
-          if (previewRef.current) {
-            const canvas = await html2canvas(previewRef.current, {
-              backgroundColor: '#ffffff',
-              scale: 2,
-              useCORS: true,
-              allowTaint: true
-            });
-
-            const pngUrl = canvas.toDataURL('image/png');
-
-            // ファイル名生成
-            const now = new Date();
-            const timestamp = now.getFullYear().toString() +
-              String(now.getMonth() + 1).padStart(2, '0') +
-              String(now.getDate()).padStart(2, '0') + '_' +
-              String(now.getHours()).padStart(2, '0') +
-              String(now.getMinutes()).padStart(2, '0');
-
-            // モバイルではモーダル表示
-            const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                          window.navigator.standalone === true;
-
-            if (isMobile || isPWA) {
-              const modal = document.createElement('div');
-              modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
-              modal.innerHTML = `
-                <p style="color:white;font-size:16px;margin-bottom:16px;text-align:center;">📱 画像を長押しして保存</p>
-                <img src="${pngUrl}" style="max-width:90%;max-height:70vh;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" />
-                <button style="margin-top:20px;padding:12px 32px;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:16px;">閉じる</button>
-              `;
-              modal.querySelector('button').onclick = () => modal.remove();
-              modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-              document.body.appendChild(modal);
-            } else {
-              const a = document.createElement('a');
-              a.href = pngUrl;
-              a.download = `screenshot_${timestamp}.png`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }
-          }
-        } catch (e) {
-          console.error('Screenshot failed:', e);
-          showToast('スクショに失敗しました', 2000);
-        }
-      }, [code, currentMode, isMobile, showToast, handleDownloadPng, spawnFallingPictos]);
 
       const handleDownload = useCallback(async () => {
         const isSvg = currentMode === 'SVG';
@@ -1562,13 +1491,17 @@ ${content}
                   hamburgerLongPressTriggered.current = false;
                   hamburgerLongPressTimer.current = setTimeout(() => {
                     hamburgerLongPressTriggered.current = true;
-                    setHamburgerPressed(false);
-                    if (navigator.vibrate) navigator.vibrate(50);
-                    handleScreenshot();
-                  }, 500);
+                    if (navigator.vibrate) navigator.vibrate(30);
+                    // 押している間ピクトグラムを出現させ続ける
+                    spawnFallingPicto();
+                    hamburgerPictoInterval.current = setInterval(() => {
+                      spawnFallingPicto();
+                    }, 150);
+                  }, 300);
                 }}
                 onTouchEnd={() => {
                   clearTimeout(hamburgerLongPressTimer.current);
+                  clearInterval(hamburgerPictoInterval.current);
                   setHamburgerPressed(false);
                   if (!hamburgerLongPressTriggered.current) {
                     setSidebarOpen(true);
@@ -1579,12 +1512,16 @@ ${content}
                   hamburgerLongPressTriggered.current = false;
                   hamburgerLongPressTimer.current = setTimeout(() => {
                     hamburgerLongPressTriggered.current = true;
-                    setHamburgerPressed(false);
-                    handleScreenshot();
-                  }, 500);
+                    // 押している間ピクトグラムを出現させ続ける
+                    spawnFallingPicto();
+                    hamburgerPictoInterval.current = setInterval(() => {
+                      spawnFallingPicto();
+                    }, 150);
+                  }, 300);
                 }}
                 onMouseUp={() => {
                   clearTimeout(hamburgerLongPressTimer.current);
+                  clearInterval(hamburgerPictoInterval.current);
                   setHamburgerPressed(false);
                   if (!hamburgerLongPressTriggered.current) {
                     setSidebarOpen(true);
@@ -1592,6 +1529,7 @@ ${content}
                 }}
                 onMouseLeave={() => {
                   clearTimeout(hamburgerLongPressTimer.current);
+                  clearInterval(hamburgerPictoInterval.current);
                   setHamburgerPressed(false);
                 }}
                 className={`fixed top-3 left-3 z-20 w-10 h-10 rounded-full
@@ -1606,7 +1544,7 @@ ${content}
                   transform: hamburgerPressed ? 'scale(1.5)' : 'scale(1)',
                   boxShadow: hamburgerPressed ? '0 0 20px rgba(255, 255, 255, 0.8)' : undefined
                 }}
-                title="ライブラリを開く（長押しでスクショ）"
+                title="ライブラリを開く（長押しで遊ぶ）"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -1979,7 +1917,7 @@ ${content}
               ) : (
                 <div className="flex flex-col w-full h-full">
                   {/* プレビューエリア */}
-                  <div ref={previewRef} className="relative flex-1 overflow-hidden">
+                  <div className="relative flex-1 overflow-hidden">
                     {/* コードがない場合：ペースト誘導表示 */}
                     {!code ? (
                       <div className="w-full h-full flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
