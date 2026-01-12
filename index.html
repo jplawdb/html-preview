@@ -605,16 +605,9 @@
         const existingIndex = savedItems.findIndex(item => item.code === content);
 
         if (existingIndex !== -1) {
-          // 重複登録（タイトルに【重複】を付けて追加）
-          const newItem = {
-            id: Date.now(),
-            title: '【重複】' + title,
-            type,
-            code: content,
-            createdAt: new Date().toISOString()
-          };
-          showToast('重複登録しました', 2000);
-          const updated = [newItem, ...savedItems];
+          // 登録解除
+          const updated = savedItems.filter((_, i) => i !== existingIndex);
+          showToast('解除しました', 2000);
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
         } else {
@@ -1917,20 +1910,18 @@ ${content}
                   {!isFullscreen && (
                     <div className={`fixed bottom-0 left-0 right-0 z-20 flex items-center justify-between px-2 py-1.5 transition-transform duration-300 ${hideUI ? 'translate-y-full' : 'translate-y-0'}`} style={{ backgroundColor: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
                       <div className="flex gap-1">
-                        {/* 登録（一番左） */}
+                        {/* 登録/解除（一番左） */}
                         <button
                           onClick={handleSave}
                           disabled={!code}
-                          className={`p-2 rounded-lg transition active:scale-95 ${code ? 'hover:opacity-80' : ''}`}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition active:scale-95 ${code ? 'hover:opacity-80' : ''}`}
                           style={{
-                            backgroundColor: isAlreadySaved ? 'var(--accent)' : 'var(--bg-tertiary)',
-                            color: isAlreadySaved ? (theme === 'dark' ? '#000' : '#fff') : (code ? 'var(--text-primary)' : 'var(--text-secondary)')
+                            backgroundColor: isAlreadySaved ? '#ef4444' : 'var(--accent)',
+                            color: isAlreadySaved ? '#fff' : (theme === 'dark' ? '#000' : '#fff'),
+                            opacity: code ? 1 : 0.5
                           }}
-                          title={isAlreadySaved ? '登録済み（更新可能）' : 'ライブラリに登録'}
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                          </svg>
+                          {isAlreadySaved ? '解除' : '登録'}
                         </button>
                       </div>
                       {/* ズームコントロール（中央） */}
