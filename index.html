@@ -397,6 +397,10 @@
       }, []);
 
       const showToast = useCallback((message, duration = 2000) => {
+        // iframeフォーカス問題の回避（Chrome iOS）
+        if (document.activeElement?.tagName === 'IFRAME') {
+          document.activeElement.blur();
+        }
         setToast({ show: true, message });
         if (toastTimerRef.current) {
           clearTimeout(toastTimerRef.current);
