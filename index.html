@@ -90,6 +90,7 @@
       const [syncCodeInput, setSyncCodeInput] = useState(''); // 同期コード入力
       const [editingItem, setEditingItem] = useState(null); // 編集中のアイテム { id, title }
       const [actionMenu, setActionMenu] = useState(null); // アクションメニュー用アイテム
+      const [toast, setToast] = useState({ show: false, message: '' }); // トースト通知
       const [theme, setTheme] = useState(() => {
         return localStorage.getItem('html-preview-theme') || 'dark';
       }); // テーマ（dark/light）
@@ -570,7 +571,8 @@
         const updated = [newItem, ...savedItems];
         setSavedItems(updated);
         localStorage.setItem('html-preview-library', JSON.stringify(updated));
-        alert('登録しました！');
+        setToast({ show: true, message: '登録しました' });
+        setTimeout(() => setToast({ show: false, message: '' }), 2000);
       }, [code, savedItems, loadedFile]);
 
       // 削除機能
@@ -2072,6 +2074,24 @@ ${content}
                       OK
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* トースト通知 */}
+            {toast.show && (
+              <div
+                className="fixed inset-0 z-[250] flex items-center justify-center"
+                onClick={() => setToast({ show: false, message: '' })}
+              >
+                <div
+                  className="px-6 py-3 rounded-full shadow-lg"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)'
+                  }}
+                >
+                  {toast.message}
                 </div>
               </div>
             )}
