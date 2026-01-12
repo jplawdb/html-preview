@@ -1006,12 +1006,24 @@ ${svgCode}
             const newItems = imported.filter(item => !existingIds.has(item.id));
             const merged = [...imported.filter(item => existingIds.has(item.id)), ...savedItems.filter(item => !imported.find(i => i.id === item.id)), ...newItems];
             merged.sort((a, b) => b.id - a.id);
-            setSavedItems(merged);
-            localStorage.setItem('html-preview-library', JSON.stringify(merged));
 
-            setSyncModal({ show: false, mode: null, code: null, loading: false, error: null });
-            alert(`インポート完了！（${imported.length}件）`);
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            // localStorageへの保存（容量チェック付き）
+            try {
+              const jsonData = JSON.stringify(merged);
+              localStorage.setItem('html-preview-library', jsonData);
+              setSavedItems(merged);
+              setSyncModal({ show: false, mode: null, code: null, loading: false, error: null });
+              alert(`インポート完了！（${imported.length}件）`);
+              if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            } catch (storageError) {
+              if (storageError.name === 'QuotaExceededError' || storageError.message.includes('quota')) {
+                // 容量超過: 既存データのサイズを計算して表示
+                const currentSize = localStorage.getItem('html-preview-library')?.length || 0;
+                const currentKB = Math.round(currentSize / 1024);
+                throw new Error(`ストレージ容量が不足しています（現在約${currentKB}KB使用中）。\nライブラリから不要なアイテムを削除してから再度お試しください。`);
+              }
+              throw storageError;
+            }
           } else {
             throw new Error(result.error || 'コードが見つかりません');
           }
