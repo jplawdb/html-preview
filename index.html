@@ -1365,13 +1365,14 @@ ${html}
 
       // 長押しスクリーンショット
       const handleScreenshot = useCallback(async () => {
+        // かわいいピクトグラムを降らせる（コンテンツなくても演出は見せる）
+        spawnFallingPictos();
+
         if (!code) {
-          showToast('コンテンツがありません', 2000);
+          showToast('コンテンツがありません 📭', 2000);
           return;
         }
 
-        // かわいいピクトグラムを降らせる
-        spawnFallingPictos();
         showToast('📸 スクショ保存中...', 1500);
 
         try {
