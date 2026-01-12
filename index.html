@@ -1629,15 +1629,6 @@ ${content}
                                 {new Date(item.updatedAt || item.createdAt).toLocaleDateString('ja-JP')}
                               </div>
                             </div>
-                            {/* タイプバッジ */}
-                            <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 ${
-                              item.type === 'PDF' ? 'bg-red-600/50 text-red-300' :
-                              item.type === 'SVG' ? 'bg-purple-600/50 text-purple-300' :
-                              item.type === 'IMAGE' ? 'bg-green-600/50 text-green-300' :
-                              'bg-blue-600/50 text-blue-300'
-                            }`}>
-                              {item.type || 'HTML'}
-                            </span>
                           </div>
                         ))}
                       </div>
