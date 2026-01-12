@@ -1514,7 +1514,7 @@ ${content}
                             onConfirm: () => {
                               const newItems = savedItems.filter(item => !selectedItems.has(item.id));
                               setSavedItems(newItems);
-                              localStorage.setItem('html-preview-saved', JSON.stringify(newItems));
+                              localStorage.setItem('html-preview-library', JSON.stringify(newItems));
                               setSelectedItems(new Set());
                               setConfirmDialog({ show: false, message: '', onConfirm: null });
                             }
@@ -1635,7 +1635,7 @@ ${content}
                                   i.id === item.id ? { ...i, starred: !i.starred } : i
                                 );
                                 setSavedItems(newItems);
-                                localStorage.setItem('html-preview-saved', JSON.stringify(newItems));
+                                localStorage.setItem('html-preview-library', JSON.stringify(newItems));
                               }}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={item.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
