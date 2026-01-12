@@ -53,6 +53,17 @@
       0%, 100% { transform: scale(1); opacity: 0.9; }
       50% { transform: scale(1.05); opacity: 1; }
     }
+    /* タップ時のやわらかバウンスアニメーション */
+    @keyframes soft-bounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(0.8); }
+      50% { transform: scale(1.15); }
+      70% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    .animate-soft-bounce {
+      animation: soft-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
     </style>
 </head>
 <body>
@@ -72,6 +83,7 @@
       const [leftPanelWidth, setLeftPanelWidth] = useState(50);
       const [activeTab, setActiveTab] = useState('preview'); // プレビューがメイン画面
       const [sidebarOpen, setSidebarOpen] = useState(false); // サイドバー開閉状態
+      const [hamburgerBounce, setHamburgerBounce] = useState(false); // ☰ボタンのバウンスアニメーション
       const [isMobile, setIsMobile] = useState(false);
       const [savedItems, setSavedItems] = useState([]);
       const [showLibrary, setShowLibrary] = useState(false);
@@ -1440,15 +1452,19 @@ ${content}
             {/* フローティング☰ボタン（iOS風） */}
             {!isFullscreen && activeTab === 'preview' && (
               <button
-                onClick={() => setSidebarOpen(true)}
-                className="fixed top-3 left-3 z-20 w-10 h-10 rounded-full
+                onClick={() => {
+                  setHamburgerBounce(true);
+                  setTimeout(() => setHamburgerBounce(false), 400);
+                  setSidebarOpen(true);
+                }}
+                className={`fixed top-3 left-3 z-20 w-10 h-10 rounded-full
                   backdrop-blur-md shadow-lg
                   flex items-center justify-center
                   hover:opacity-80
-                  transition-all duration-300 active:scale-95
-                "
+                  transition-all duration-300
+                  ${hamburgerBounce ? 'animate-soft-bounce' : ''}`}
                 style={{
-                  animation: 'pulse-soft 3s ease-in-out infinite',
+                  animation: hamburgerBounce ? undefined : 'pulse-soft 3s ease-in-out infinite',
                   backgroundColor: theme === 'dark' ? 'rgba(107, 114, 128, 0.3)' : 'rgba(0, 0, 0, 0.1)',
                   color: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)'
                 }}
