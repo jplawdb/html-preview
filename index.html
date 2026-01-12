@@ -1407,6 +1407,9 @@ ${html}
 
       // 溜まった絵文字をフェードアウト
       const fadeOutEmojis = useCallback(() => {
+        // 降下中の絵文字を即削除
+        document.querySelectorAll('.falling-picto').forEach(el => el.remove());
+        // 着地済みの絵文字をフェードアウト
         const pool = document.querySelector('.emoji-pool');
         if (pool) {
           const emojis = pool.querySelectorAll('.landed-emoji:not(.fading)');
