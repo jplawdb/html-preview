@@ -1139,6 +1139,12 @@ ${html}
         return false;
       }, []);
 
+      // 現在のコードが既に登録済みかどうか
+      const isAlreadySaved = useMemo(() => {
+        if (!code) return false;
+        return savedItems.some(item => item.code === code);
+      }, [savedItems, code]);
+
       // 現在のモードを判定（コード内のHTML/SVGを検出、前後の会話文を無視）
       const currentMode = useMemo(() => {
         const trimmed = debouncedCode.trim();
@@ -1915,10 +1921,10 @@ ${content}
                           disabled={!code}
                           className={`p-2 rounded-lg transition active:scale-95 ${code ? 'hover:opacity-80' : ''}`}
                           style={{
-                            backgroundColor: code ? 'var(--accent)' : 'var(--bg-tertiary)',
-                            color: code ? (theme === 'dark' ? '#000' : '#fff') : 'var(--text-secondary)'
+                            backgroundColor: isAlreadySaved ? 'var(--accent)' : 'var(--bg-tertiary)',
+                            color: isAlreadySaved ? (theme === 'dark' ? '#000' : '#fff') : (code ? 'var(--text-primary)' : 'var(--text-secondary)')
                           }}
-                          title="ライブラリに登録"
+                          title={isAlreadySaved ? '登録済み（更新可能）' : 'ライブラリに登録'}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
