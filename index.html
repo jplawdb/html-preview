@@ -1359,13 +1359,12 @@ ${content}
             {!isFullscreen && activeTab === 'preview' && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className={`fixed top-3 left-3 z-20 w-10 h-10 rounded-full
+                className="fixed top-3 left-3 z-20 w-10 h-10 rounded-full
                   bg-gray-500/30 backdrop-blur-md shadow-lg
                   flex items-center justify-center
                   text-white/80 hover:text-white hover:bg-white/30
                   transition-all duration-300 active:scale-95
-                  ${hideUI ? 'opacity-0 pointer-events-none' : 'opacity-100'}
-                `}
+                "
                 style={{
                   animation: 'pulse-soft 3s ease-in-out infinite'
                 }}
