@@ -2524,9 +2524,16 @@ ${content}
                     </button>
                   </div>
                 </div>
-                {/* 下部：ミニプレビュー */}
-                <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-                  <div className="h-72 overflow-auto">
+                {/* プレビュー（最大化） */}
+                <div className="relative bg-white rounded-xl w-full overflow-hidden shadow-2xl flex-1" style={{ maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
+                  {/* 右上×ボタン */}
+                  <button
+                    onClick={() => setActionMenu(null)}
+                    className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white text-xl active:bg-black/70"
+                  >
+                    ×
+                  </button>
+                  <div className="w-full h-full overflow-auto">
                     {actionMenu.type === 'SVG' ? (
                       <div
                         className="w-full h-full flex items-center justify-center bg-gray-100 p-2"
@@ -2536,20 +2543,13 @@ ${content}
                       <iframe
                         srcDoc={actionMenu.code}
                         className="w-full h-full border-0"
+                        style={{ minHeight: '60vh' }}
                         sandbox="allow-scripts"
                         title="preview"
                       />
                     )}
                   </div>
                 </div>
-                {/* 閉じるボタン */}
-                <button
-                  onClick={() => setActionMenu(null)}
-                  className="mt-3 px-6 py-2 rounded-full text-sm active:opacity-80"
-                  style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                >
-                  閉じる
-                </button>
               </div>
             )}
           </div>
