@@ -376,6 +376,11 @@
         const currentY = e.target.scrollTop;
         const diff = currentY - lastScrollY.current;
 
+        // スクロールしたら三点メニューを閉じる
+        if (Math.abs(diff) > 20) {
+          setShowPreviewMenu(false);
+        }
+
         // 20px以上スクロールで判定
         if (diff > 20) {
           // 下スクロール → UI非表示
@@ -468,6 +473,10 @@
             lastProcessed = now;
             const currentY = e.data.top || 0;
             const diff = currentY - lastScrollY.current;
+            // スクロールしたら三点メニューを閉じる
+            if (Math.abs(diff) > 20) {
+              setShowPreviewMenu(false);
+            }
             if (diff > 20) setHideUI(true);
             else if (diff < -20) setHideUI(false);
             lastScrollY.current = currentY;
