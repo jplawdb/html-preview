@@ -605,9 +605,16 @@
         const existingIndex = savedItems.findIndex(item => item.code === content);
 
         if (existingIndex !== -1) {
-          // 登録解除
-          const updated = savedItems.filter((_, i) => i !== existingIndex);
-          showToast('解除しました', 2000);
+          // 重複登録（タイトルに【重複】を付けて追加）
+          const newItem = {
+            id: Date.now(),
+            title: '【重複】' + title,
+            type,
+            code: content,
+            createdAt: new Date().toISOString()
+          };
+          showToast('重複登録しました', 2000);
+          const updated = [newItem, ...savedItems];
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
         } else {
