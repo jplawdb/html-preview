@@ -1589,6 +1589,7 @@ ${content}
                                 ? 'bg-blue-900/50 border border-blue-500'
                                 : 'bg-gray-800 border border-transparent hover:bg-gray-700'
                             }`}
+                            style={{ touchAction: 'pan-y' }}
                             onTouchStart={(e) => handleLibraryTouchStart(e, item)}
                             onTouchEnd={handleLibraryTouchEnd}
                             onTouchMove={handleLibraryTouchMove}
