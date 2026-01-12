@@ -944,6 +944,40 @@ ${svgCode}
         }
       }, [savedItems, selectedItems]);
 
+      // 現在のコードを送信（プレビュー画面用）
+      const sendCurrentCode = useCallback(async () => {
+        if (!code) return;
+
+        const currentItem = {
+          id: Date.now(),
+          title: loadedFile?.name || 'Preview',
+          type: currentMode,
+          code: code,
+          createdAt: new Date().toISOString()
+        };
+
+        setSyncModal({ show: true, mode: 'generate', code: null, loading: true, error: null, count: 1 });
+
+        try {
+          const json = JSON.stringify([currentItem]);
+          const response = await fetch(`${SYNC_URL}/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: json
+          });
+          const result = await response.json();
+
+          if (result.code) {
+            setSyncModal(prev => ({ ...prev, loading: false, code: result.code }));
+          } else {
+            throw new Error(result.error || 'Unknown error');
+          }
+        } catch (err) {
+          console.error('Sync error:', err);
+          setSyncModal(prev => ({ ...prev, loading: false, error: 'コード発行に失敗しました' }));
+        }
+      }, [code, loadedFile, currentMode]);
+
       // 同期コード入力モーダルを開く
       const openSyncInput = useCallback(() => {
         setSyncCodeInput('');
@@ -2019,7 +2053,7 @@ ${content}
                               ↓受信
                             </button>
                             <button
-                              onClick={generateSyncCode}
+                              onClick={sendCurrentCode}
                               className="px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95"
                               style={{ backgroundColor: '#22c55e', color: '#fff' }}
                             >
