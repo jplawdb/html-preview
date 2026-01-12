@@ -605,7 +605,7 @@
             ...savedItems.filter((_, i) => i !== existingIndex)
           ];
 
-          showToast('登録済です。トップに移動しました', 2000);
+          showToast('登録済です。\nライブラリのトップへ\n移動しました。', 2000);
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
         } else {
@@ -2330,7 +2330,9 @@ ${content}
                 className="px-6 py-3 rounded-full shadow-lg"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)'
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'pre-line',
+                  textAlign: 'center'
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -2706,7 +2708,9 @@ ${content}
                 className="px-6 py-3 rounded-full shadow-lg"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)'
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'pre-line',
+                  textAlign: 'center'
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
