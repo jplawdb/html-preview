@@ -605,14 +605,9 @@
         const existingIndex = savedItems.findIndex(item => item.code === content);
 
         if (existingIndex !== -1) {
-          // 既存アイテムをトップに移動
-          const existingItem = savedItems[existingIndex];
-          const updated = [
-            { ...existingItem, createdAt: new Date().toISOString() },
-            ...savedItems.filter((_, i) => i !== existingIndex)
-          ];
-
-          showToast('登録済です。\nライブラリのトップへ\n移動しました。', 2000);
+          // 登録解除
+          const updated = savedItems.filter((_, i) => i !== existingIndex);
+          showToast('解除しました', 2000);
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
         } else {
