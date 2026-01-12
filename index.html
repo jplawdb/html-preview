@@ -59,27 +59,54 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
     }
-    /* 長押し時の人型ピクトグラムよちよち降下アニメーション */
-    @keyframes yochiyochi-fall {
-      0% { transform: translateY(-50px) translateX(0) rotate(-5deg); opacity: 0; }
-      10% { transform: translateY(10vh) translateX(-8px) rotate(5deg); opacity: 1; }
-      20% { transform: translateY(20vh) translateX(8px) rotate(-5deg); opacity: 1; }
-      30% { transform: translateY(30vh) translateX(-8px) rotate(5deg); opacity: 1; }
-      40% { transform: translateY(40vh) translateX(8px) rotate(-5deg); opacity: 1; }
-      50% { transform: translateY(50vh) translateX(-8px) rotate(5deg); opacity: 1; }
-      60% { transform: translateY(60vh) translateX(8px) rotate(-5deg); opacity: 0.9; }
-      70% { transform: translateY(70vh) translateX(-8px) rotate(5deg); opacity: 0.7; }
-      80% { transform: translateY(80vh) translateX(8px) rotate(-5deg); opacity: 0.5; }
-      90% { transform: translateY(90vh) translateX(-8px) rotate(5deg); opacity: 0.3; }
-      100% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
+    /* 長押し時の顔絵文字降下アニメーション */
+    @keyframes emoji-fall {
+      0% { transform: translateY(-50px) translateX(0) rotate(-10deg); opacity: 0; }
+      10% { opacity: 1; }
+      20% { transform: translateY(20vh) translateX(-15px) rotate(10deg); opacity: 1; }
+      40% { transform: translateY(40vh) translateX(15px) rotate(-10deg); opacity: 1; }
+      60% { transform: translateY(60vh) translateX(-15px) rotate(10deg); opacity: 1; }
+      80% { transform: translateY(80vh) translateX(10px) rotate(-5deg); opacity: 1; }
+      100% { transform: translateY(calc(100vh - 120px)) translateX(0) rotate(0deg); opacity: 1; }
     }
     .falling-picto {
       position: fixed;
       top: 0;
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       z-index: 9999;
       pointer-events: none;
-      animation: yochiyochi-fall 2.5s linear forwards;
+      animation: emoji-fall 2s ease-out forwards;
+    }
+    /* 溜まった絵文字用コンテナ */
+    .emoji-pool {
+      position: fixed;
+      bottom: 60px;
+      left: 0;
+      right: 0;
+      height: 80px;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9998;
+    }
+    /* 着地した絵文字 */
+    .landed-emoji {
+      position: absolute;
+      bottom: 0;
+      font-size: 1.5rem;
+      animation: bounce-land 0.3s ease-out;
+    }
+    @keyframes bounce-land {
+      0% { transform: translateY(-10px); }
+      50% { transform: translateY(3px); }
+      100% { transform: translateY(0); }
+    }
+    /* フェードアウト */
+    @keyframes emoji-fadeout {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .landed-emoji.fading {
+      animation: emoji-fadeout 2s ease-out forwards;
     }
     </style>
 </head>
@@ -1347,17 +1374,49 @@ ${html}
         }
       }, [code, currentMode]);
 
-      // 人型ピクトグラムを1体出現させる（よちよち歩き）
+      // 顔絵文字を1体出現させる（フッターに溜まる）
       const spawnFallingPicto = useCallback(() => {
-        const pictos = ['🚶', '🚶‍♂️', '🚶‍♀️', '🏃', '🏃‍♂️', '🏃‍♀️', '🧍', '🧍‍♂️', '🧍‍♀️'];
+        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😋', '😛', '🤪', '😜', '🤗'];
         const el = document.createElement('div');
         el.className = 'falling-picto';
-        el.textContent = pictos[Math.floor(Math.random() * pictos.length)];
-        el.style.left = `${10 + Math.random() * 80}%`;
-        el.style.animationDuration = `${2.0 + Math.random() * 1.0}s`;
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        el.textContent = emoji;
+        const startX = 10 + Math.random() * 80;
+        el.style.left = `${startX}%`;
+        el.style.animationDuration = `${1.8 + Math.random() * 0.8}s`;
         document.body.appendChild(el);
-        // アニメーション終了後に削除
-        setTimeout(() => el.remove(), 3500);
+
+        // アニメーション終了時にフッターに着地
+        el.addEventListener('animationend', () => {
+          el.remove();
+          const pool = document.querySelector('.emoji-pool');
+          if (pool) {
+            const landed = document.createElement('div');
+            landed.className = 'landed-emoji';
+            landed.textContent = emoji;
+            landed.style.left = `${startX}%`;
+            pool.appendChild(landed);
+            // 溜まりすぎたら古いのを削除
+            const landedEmojis = pool.querySelectorAll('.landed-emoji:not(.fading)');
+            if (landedEmojis.length > 50) {
+              landedEmojis[0].remove();
+            }
+          }
+        });
+      }, []);
+
+      // 溜まった絵文字をフェードアウト
+      const fadeOutEmojis = useCallback(() => {
+        const pool = document.querySelector('.emoji-pool');
+        if (pool) {
+          const emojis = pool.querySelectorAll('.landed-emoji:not(.fading)');
+          emojis.forEach((el, i) => {
+            setTimeout(() => {
+              el.classList.add('fading');
+              setTimeout(() => el.remove(), 2000);
+            }, i * 30);
+          });
+        }
       }, []);
 
       const handleDownload = useCallback(async () => {
@@ -1505,6 +1564,8 @@ ${content}
                   setHamburgerPressed(false);
                   if (!hamburgerLongPressTriggered.current) {
                     setSidebarOpen(true);
+                  } else {
+                    fadeOutEmojis();
                   }
                 }}
                 onMouseDown={() => {
@@ -1525,12 +1586,17 @@ ${content}
                   setHamburgerPressed(false);
                   if (!hamburgerLongPressTriggered.current) {
                     setSidebarOpen(true);
+                  } else {
+                    fadeOutEmojis();
                   }
                 }}
                 onMouseLeave={() => {
                   clearTimeout(hamburgerLongPressTimer.current);
                   clearInterval(hamburgerPictoInterval.current);
                   setHamburgerPressed(false);
+                  if (hamburgerLongPressTriggered.current) {
+                    fadeOutEmojis();
+                  }
                 }}
                 className={`fixed top-3 left-3 z-20 w-10 h-10 rounded-full
                   backdrop-blur-md shadow-lg
@@ -1551,6 +1617,8 @@ ${content}
                 </svg>
               </button>
             )}
+            {/* 顔絵文字が溜まるプール */}
+            <div className="emoji-pool" />
             {/* hidden file input */}
             <input
               ref={fileInputRef}
