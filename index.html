@@ -1966,8 +1966,8 @@ ${content}
                       {/* ズームコントロール（中央） */}
                       <div className="flex items-center gap-1 rounded-lg px-1" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                         <button
-                          onClick={() => setZoomLevel(z => Math.max(25, z - 25))}
-                          disabled={zoomLevel <= 25}
+                          onClick={() => setZoomLevel(z => Math.max(50, z - 10))}
+                          disabled={zoomLevel <= 50}
                           className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
                           style={{ color: 'var(--text-secondary)' }}
                           title="縮小"
@@ -1985,7 +1985,7 @@ ${content}
                           {zoomLevel}%
                         </button>
                         <button
-                          onClick={() => setZoomLevel(z => Math.min(150, z + 25))}
+                          onClick={() => setZoomLevel(z => Math.min(150, z + 10))}
                           disabled={zoomLevel >= 150}
                           className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
                           style={{ color: 'var(--text-secondary)' }}
