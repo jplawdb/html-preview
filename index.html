@@ -602,10 +602,13 @@
           createdAt: new Date().toISOString()
         };
 
+        // まずトーストを表示（重い処理の前に）
+        showToast('登録しました', 2000);
+
+        // 重い処理は後で
         const updated = [newItem, ...savedItems];
         setSavedItems(updated);
         localStorage.setItem('html-preview-library', JSON.stringify(updated));
-        showToast('登録しました', 2000);
       }, [code, savedItems, loadedFile, showToast]);
 
       // 削除機能
