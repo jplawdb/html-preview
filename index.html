@@ -60,6 +60,22 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
     }
+    /* 長押し時のかわいいピクトグラム降下アニメーション */
+    @keyframes picto-fall {
+      0% { transform: translateY(-50px) rotate(0deg) scale(0); opacity: 0; }
+      10% { transform: translateY(0) rotate(10deg) scale(1.2); opacity: 1; }
+      30% { transform: translateY(30vh) rotate(-15deg) scale(1); opacity: 1; }
+      60% { transform: translateY(60vh) rotate(20deg) scale(0.9); opacity: 0.8; }
+      100% { transform: translateY(100vh) rotate(-10deg) scale(0.5); opacity: 0; }
+    }
+    .falling-picto {
+      position: fixed;
+      top: 0;
+      font-size: 2rem;
+      z-index: 9999;
+      pointer-events: none;
+      animation: picto-fall 1.5s ease-in forwards;
+    }
     </style>
 </head>
 <body>
@@ -1326,6 +1342,27 @@ ${html}
         }
       }, [code, currentMode]);
 
+      // かわいいピクトグラム降下アニメーション
+      const spawnFallingPictos = useCallback(() => {
+        const pictos = ['📸', '📷', '🖼️', '✨', '🌟', '💫', '⭐', '🎬'];
+        const count = 8 + Math.floor(Math.random() * 5); // 8-12個
+
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => {
+            const el = document.createElement('div');
+            el.className = 'falling-picto';
+            el.textContent = pictos[Math.floor(Math.random() * pictos.length)];
+            el.style.left = `${10 + Math.random() * 80}%`;
+            el.style.animationDuration = `${1.2 + Math.random() * 0.8}s`;
+            el.style.animationDelay = `${Math.random() * 0.2}s`;
+            document.body.appendChild(el);
+
+            // アニメーション終了後に削除
+            setTimeout(() => el.remove(), 2500);
+          }, i * 80); // 少しずつ時間差で出現
+        }
+      }, []);
+
       // 長押しスクリーンショット
       const handleScreenshot = useCallback(async () => {
         if (!code) {
@@ -1333,7 +1370,9 @@ ${html}
           return;
         }
 
-        showToast('スクショ保存中...', 1500);
+        // かわいいピクトグラムを降らせる
+        spawnFallingPictos();
+        showToast('📸 スクショ保存中...', 1500);
 
         try {
           // SVGモードは既存の高品質PNG変換を使用
@@ -1389,7 +1428,7 @@ ${html}
           console.error('Screenshot failed:', e);
           showToast('スクショに失敗しました', 2000);
         }
-      }, [code, currentMode, isMobile, showToast, handleDownloadPng]);
+      }, [code, currentMode, isMobile, showToast, handleDownloadPng, spawnFallingPictos]);
 
       const handleDownload = useCallback(async () => {
         const isSvg = currentMode === 'SVG';
