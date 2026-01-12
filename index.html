@@ -88,6 +88,9 @@
       const [searchQuery, setSearchQuery] = useState(''); // ライブラリ検索
       const [showStarredOnly, setShowStarredOnly] = useState(false); // ★のみ表示
       const [confirmDialog, setConfirmDialog] = useState({ show: false, message: '', onConfirm: null }); // カスタム確認ダイアログ
+      const [clearConfirmCount, setClearConfirmCount] = useState(() => {
+        return parseInt(localStorage.getItem('html-preview-clear-count') || '0', 10);
+      }); // クリア確認カウント（10回で非表示）
       const [showPreviewMenu, setShowPreviewMenu] = useState(false); // プレビューツールバーの三点メニュー
       const [hideUI, setHideUI] = useState(false); // スクロール時にUI非表示
       const [zoomLevel, setZoomLevel] = useState(100); // プレビューのズームレベル（%）
@@ -649,6 +652,36 @@
           }
         });
       }, [savedItems]);
+
+      // クリア機能（10回確認後は確認なしでクリア）
+      const handleClear = useCallback(() => {
+        if (!code) return;
+
+        const doClear = () => {
+          setCode('');
+          setLoadedFile(null);
+        };
+
+        // 10回以上確認済みなら確認なしでクリア
+        if (clearConfirmCount >= 10) {
+          doClear();
+          return;
+        }
+
+        // 確認ダイアログ表示（カウント付き）
+        const remaining = clearConfirmCount + 1;
+        setConfirmDialog({
+          show: true,
+          message: `クリアしますか？ ${remaining}/10`,
+          onConfirm: () => {
+            doClear();
+            const newCount = clearConfirmCount + 1;
+            setClearConfirmCount(newCount);
+            localStorage.setItem('html-preview-clear-count', String(newCount));
+            setConfirmDialog({ show: false, message: '', onConfirm: null });
+          }
+        });
+      }, [code, clearConfirmCount]);
 
       // スター切り替え
       const toggleStar = useCallback((id) => {
@@ -1999,19 +2032,7 @@ ${content}
                       <div className="flex gap-1">
                         {/* クリア */}
                         <button
-                          onClick={() => {
-                            if (code) {
-                              setConfirmDialog({
-                                show: true,
-                                message: 'クリアしますか？',
-                                onConfirm: () => {
-                                  setCode('');
-                                  setLoadedFile(null);
-                                  setConfirmDialog({ show: false, message: '', onConfirm: null });
-                                }
-                              });
-                            }
-                          }}
+                          onClick={handleClear}
                           disabled={!code}
                           className={`p-2 rounded-lg transition active:scale-95 ${code ? 'hover:opacity-80' : ''}`}
                           style={{
@@ -2413,17 +2434,7 @@ ${content}
               </button>
               {code && (
                 <button
-                  onClick={() => {
-                    setConfirmDialog({
-                      show: true,
-                      message: 'クリアしますか？',
-                      onConfirm: () => {
-                        setCode('');
-                        setLoadedFile(null);
-                        setConfirmDialog({ show: false, message: '', onConfirm: null });
-                      }
-                    });
-                  }}
+                  onClick={handleClear}
                   className="px-4 py-2 hover:opacity-80 text-sm rounded transition"
                   style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                 >
