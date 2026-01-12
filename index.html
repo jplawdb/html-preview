@@ -99,6 +99,7 @@
         return params.get('paste') === '1';
       }, []);
       const containerRef = useRef(null);
+      const toastTimerRef = useRef(null);
       const isDragging = useRef(false);
       const longPressTimer = useRef(null);
       const textareaRef = useRef(null);
@@ -387,6 +388,25 @@
         setHideUI(prev => !prev);
       }, []);
 
+      const dismissToast = useCallback(() => {
+        if (toastTimerRef.current) {
+          clearTimeout(toastTimerRef.current);
+          toastTimerRef.current = null;
+        }
+        setToast({ show: false, message: '' });
+      }, []);
+
+      const showToast = useCallback((message, duration = 2000) => {
+        setToast({ show: true, message });
+        if (toastTimerRef.current) {
+          clearTimeout(toastTimerRef.current);
+        }
+        toastTimerRef.current = setTimeout(() => {
+          setToast({ show: false, message: '' });
+          toastTimerRef.current = null;
+        }, duration);
+      }, []);
+
       // デバウンス処理（大量テキスト対策）
       useEffect(() => {
         const timer = setTimeout(() => {
@@ -416,6 +436,16 @@
         setHideUI(false);
         lastScrollY.current = 0;
       }, [activeTab]);
+
+      // アンマウント時にトーストタイマーをクリア
+      useEffect(() => {
+        return () => {
+          if (toastTimerRef.current) {
+            clearTimeout(toastTimerRef.current);
+            toastTimerRef.current = null;
+          }
+        };
+      }, []);
 
       // iframe内スクロールのpostMessageリスナー
       useEffect(() => {
@@ -571,9 +601,8 @@
         const updated = [newItem, ...savedItems];
         setSavedItems(updated);
         localStorage.setItem('html-preview-library', JSON.stringify(updated));
-        setToast({ show: true, message: '登録しました' });
-        setTimeout(() => setToast({ show: false, message: '' }), 3000);
-      }, [code, savedItems, loadedFile]);
+        showToast('登録しました', 2000);
+      }, [code, savedItems, loadedFile, showToast]);
 
       // 削除機能
       const handleDelete = useCallback((id) => {
@@ -2274,7 +2303,7 @@ ${content}
             <div
               className="fixed top-0 left-0 right-0 bottom-0 z-[250] flex items-center justify-center"
               style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
-              onClick={() => setToast({ show: false, message: '' })}
+              onClick={dismissToast}
             >
               <div
                 className="px-6 py-3 rounded-full shadow-lg"
@@ -2650,7 +2679,7 @@ ${content}
             <div
               className="fixed inset-0 z-[250] flex items-center justify-center"
               style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
-              onClick={() => setToast({ show: false, message: '' })}
+              onClick={dismissToast}
             >
               <div
                 className="px-6 py-3 rounded-full shadow-lg"
