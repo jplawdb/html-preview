@@ -2466,16 +2466,7 @@ ${content}
                   <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
                     <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{actionMenu.title}</p>
                   </div>
-                  <div className="grid grid-cols-5 gap-1 p-2">
-                    <button
-                      onClick={() => { handleLoad(actionMenu); setActionMenu(null); }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>開く</span>
-                    </button>
+                  <div className="grid grid-cols-4 gap-1 p-2">
                     <button
                       onClick={async () => {
                         try {
@@ -2494,13 +2485,39 @@ ${content}
                       <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>コピー</span>
                     </button>
                     <button
-                      onClick={() => { toggleStar(actionMenu.id); setActionMenu(null); }}
+                      onClick={async () => {
+                        const item = {
+                          id: actionMenu.id,
+                          title: actionMenu.title,
+                          type: actionMenu.type,
+                          code: actionMenu.code,
+                          createdAt: actionMenu.createdAt
+                        };
+                        setActionMenu(null);
+                        setSyncModal({ show: true, mode: 'generate', code: null, loading: true, error: null, count: 1 });
+                        try {
+                          const response = await fetch(`${SYNC_URL}/sync`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify([item])
+                          });
+                          const result = await response.json();
+                          if (result.code) {
+                            setSyncModal(prev => ({ ...prev, loading: false, code: result.code }));
+                          } else {
+                            throw new Error(result.error || 'Unknown error');
+                          }
+                        } catch (err) {
+                          console.error('Sync error:', err);
+                          setSyncModal(prev => ({ ...prev, loading: false, error: 'コード発行に失敗しました' }));
+                        }
+                      }}
                       className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${actionMenu.starred ? 'text-yellow-400' : ''}`} style={{ color: actionMenu.starred ? undefined : 'var(--text-secondary)' }} fill={actionMenu.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                       </svg>
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{actionMenu.starred ? '★解除' : '★'}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>送信</span>
                     </button>
                     <button
                       onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); }}
