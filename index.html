@@ -2271,14 +2271,18 @@ ${content}
 
           {/* トースト通知（overflow-hidden外に配置） */}
           {toast.show && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/30 pointer-events-none">
+            <div
+              className="fixed inset-0 z-[250] flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+              onClick={() => setToast({ show: false, message: '' })}
+            >
               <div
-                className="px-6 py-3 rounded-full shadow-lg pointer-events-auto cursor-pointer"
+                className="px-6 py-3 rounded-full shadow-lg"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)'
                 }}
-                onClick={() => setToast({ show: false, message: '' })}
+                onClick={(e) => e.stopPropagation()}
               >
                 {toast.message}
               </div>
@@ -2643,14 +2647,18 @@ ${content}
 
           {/* トースト通知 */}
           {toast.show && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/30 pointer-events-none">
+            <div
+              className="fixed inset-0 z-[250] flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+              onClick={() => setToast({ show: false, message: '' })}
+            >
               <div
-                className="px-6 py-3 rounded-full shadow-lg pointer-events-auto cursor-pointer"
+                className="px-6 py-3 rounded-full shadow-lg"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)'
                 }}
-                onClick={() => setToast({ show: false, message: '' })}
+                onClick={(e) => e.stopPropagation()}
               >
                 {toast.message}
               </div>
