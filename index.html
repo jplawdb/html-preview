@@ -2130,8 +2130,8 @@ ${content}
                         )}
                       </div>
                     )}
-                    {/* フローティング同期ボタン（状態に応じて切り替え）- 常に表示 */}
-                    <div className="absolute top-3 right-3 z-30">
+                    {/* フローティング同期ボタン（状態に応じて切り替え）- UI非表示と連動 */}
+                    <div className={`absolute top-3 right-3 z-30 transition-opacity duration-300 ${hideUI ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                       {code ? (
                         <button
                           onClick={sendCurrentCode}
