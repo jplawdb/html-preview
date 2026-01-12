@@ -2128,30 +2128,28 @@ ${content}
                             onClick={handlePreviewTap}
                           />
                         )}
-                        {/* フローティング同期ボタン（状態に応じて切り替え） */}
-                        {!hideUI && (
-                          <div className="absolute top-3 right-3 z-30">
-                            {code ? (
-                              <button
-                                onClick={sendCurrentCode}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95"
-                                style={{ backgroundColor: '#22c55e', color: '#fff' }}
-                              >
-                                ↑送信
-                              </button>
-                            ) : (
-                              <button
-                                onClick={openSyncInput}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95"
-                                style={{ backgroundColor: '#6366f1', color: '#fff' }}
-                              >
-                                ↓受信
-                              </button>
-                            )}
-                          </div>
-                        )}
                       </div>
                     )}
+                    {/* フローティング同期ボタン（状態に応じて切り替え）- 常に表示 */}
+                    <div className="absolute top-3 right-3 z-30">
+                      {code ? (
+                        <button
+                          onClick={sendCurrentCode}
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95"
+                          style={{ backgroundColor: '#22c55e', color: '#fff' }}
+                        >
+                          ↑送信
+                        </button>
+                      ) : (
+                        <button
+                          onClick={openSyncInput}
+                          className="px-3 py-1.5 rounded-lg text-sm font-medium shadow-lg transition active:scale-95"
+                          style={{ backgroundColor: '#6366f1', color: '#fff' }}
+                        >
+                          ↓受信
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {/* 下部ツールバー（最大化時・スクロール時は非表示） */}
                   {!isFullscreen && (
