@@ -2475,9 +2475,13 @@ ${content}
               )}
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded transition"
+                className="px-4 py-2 text-sm rounded transition"
+                style={{
+                  backgroundColor: isAlreadySaved ? '#ef4444' : '#ca8a04',
+                  color: '#fff'
+                }}
               >
-                📚 登録
+                {isAlreadySaved ? '📚 解除' : '📚 登録'}
               </button>
               {code && (
                 <button
