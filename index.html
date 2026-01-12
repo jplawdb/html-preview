@@ -1728,9 +1728,9 @@ ${content}
                               libraryLongPressTriggered.current = false;
                             }}
                           >
-                            {/* チェックボックス - タップ領域拡大 */}
+                            {/* チェックボックス - タップ領域をカード高さに合わせる */}
                             <div
-                              className="p-2 -m-2 flex-shrink-0"
+                              className="self-stretch flex items-center px-3 -ml-2 flex-shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedItems(prev => {
