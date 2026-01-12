@@ -997,6 +997,9 @@ ${svgCode}
         // スクロール通知用のインラインハンドラ（onscroll属性方式）
         const scrollHandler = "window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop},'*')";
 
+        // スクロール通知用のスクリプト（window/documentレベルで検知、子要素スクロールも対応）
+        const scrollScript = `<scr` + `ipt>(function(){var send=function(){window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop||0},'*')};window.addEventListener('scroll',send,true);document.addEventListener('scroll',send,true)})();</scr` + `ipt>`;
+
         // HTMLドキュメントが含まれているかチェック
         const hasHtmlDoc = /<!DOCTYPE\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
         // SVGが含まれているかチェック
@@ -1062,6 +1065,7 @@ ${svgCode}
 </head>
 <body onscroll="${scrollHandler}">
 ${html}
+${scrollScript}
 </body>
 </html>`;
         }
@@ -1092,6 +1096,7 @@ ${html}
 </head>
 <body onscroll="${scrollHandler}">
   ${svgOnly}
+${scrollScript}
 </body>
 </html>`;
         }
@@ -1114,6 +1119,15 @@ ${html}
         } else {
           // html タグもない場合（断片的なHTML）
           html = `<body onscroll="${scrollHandler}">${html}</body>`;
+        }
+
+        // scrollScriptを注入（</body>または</html>の前、なければ末尾）
+        if (/<\/body>/i.test(html)) {
+          html = html.replace(/<\/body>/i, `${scrollScript}</body>`);
+        } else if (/<\/html>/i.test(html)) {
+          html = html.replace(/<\/html>/i, `${scrollScript}</html>`);
+        } else {
+          html = html + scrollScript;
         }
 
         return html;
@@ -1143,10 +1157,15 @@ ${html}
         return false;
       }, []);
 
-      // 現在のコードが既に登録済みかどうか
+      // 現在のコードが既に登録済みかどうか（handleSaveと同じロジックで比較）
       const isAlreadySaved = useMemo(() => {
         if (!code) return false;
-        return savedItems.some(item => item.code === code);
+        const trimmed = code.trim();
+        const hasHtmlDoc = /<!DOCTYPE\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
+        const hasSvg = /<svg[\s>]/i.test(trimmed);
+        const isSvg = hasSvg && !hasHtmlDoc;
+        const content = isSvg ? extractSvgTag(trimmed) : code;
+        return savedItems.some(item => item.code === content);
       }, [savedItems, code]);
 
       // 現在のモードを判定（コード内のHTML/SVGを検出、前後の会話文を無視）
