@@ -428,6 +428,33 @@
         }, duration);
       }, []);
 
+      // トーストメッセージ内の「登録」「解除」をハイライト
+      const renderToastMessage = (message, type) => {
+        if (type === 'save' && message.includes('登録')) {
+          const parts = message.split('登録');
+          return parts.map((part, i) => (
+            <React.Fragment key={i}>
+              {part.split('\n').map((line, j) => j > 0 ? <React.Fragment key={j}><br/>{line}</React.Fragment> : line)}
+              {i < parts.length - 1 && (
+                <span style={{ backgroundColor: '#FACC15', color: '#000', fontWeight: 'bold', padding: '0 4px', borderRadius: '4px' }}>登録</span>
+              )}
+            </React.Fragment>
+          ));
+        }
+        if (type === 'remove' && message.includes('解除')) {
+          const parts = message.split('解除');
+          return parts.map((part, i) => (
+            <React.Fragment key={i}>
+              {part.split('\n').map((line, j) => j > 0 ? <React.Fragment key={j}><br/>{line}</React.Fragment> : line)}
+              {i < parts.length - 1 && (
+                <span style={{ backgroundColor: '#ef4444', color: '#fff', fontWeight: 'bold', padding: '0 4px', borderRadius: '4px' }}>解除</span>
+              )}
+            </React.Fragment>
+          ));
+        }
+        return message.split('\n').map((line, i) => i > 0 ? <React.Fragment key={i}><br/>{line}</React.Fragment> : line);
+      };
+
       // デバウンス処理（大量テキスト対策）
       useEffect(() => {
         const timer = setTimeout(() => {
@@ -2394,16 +2421,15 @@ ${content}
               onClick={dismissToast}
             >
               <div
-                className="px-6 py-3 rounded-full shadow-lg font-bold"
+                className="px-6 py-3 rounded-full shadow-lg"
                 style={{
-                  backgroundColor: toast.type === 'save' ? '#FACC15' : toast.type === 'remove' ? '#ef4444' : 'var(--bg-tertiary)',
-                  color: toast.type === 'save' ? '#000' : toast.type === 'remove' ? '#fff' : 'var(--text-primary)',
-                  whiteSpace: 'pre-line',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
                   textAlign: 'center'
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {toast.message}
+                {renderToastMessage(toast.message, toast.type)}
               </div>
             </div>
           )}
@@ -2762,16 +2788,15 @@ ${content}
               onClick={dismissToast}
             >
               <div
-                className="px-6 py-3 rounded-full shadow-lg font-bold"
+                className="px-6 py-3 rounded-full shadow-lg"
                 style={{
-                  backgroundColor: toast.type === 'save' ? '#FACC15' : toast.type === 'remove' ? '#ef4444' : 'var(--bg-tertiary)',
-                  color: toast.type === 'save' ? '#000' : toast.type === 'remove' ? '#fff' : 'var(--text-primary)',
-                  whiteSpace: 'pre-line',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
                   textAlign: 'center'
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {toast.message}
+                {renderToastMessage(toast.message, toast.type)}
               </div>
             </div>
           )}
