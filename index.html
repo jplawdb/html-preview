@@ -1328,7 +1328,7 @@ ${content}
                 </svg>
               </button>
               {/* ファイル情報（読み込み時のみ） */}
-              {loadedFile ? (
+              {loadedFile && (
                 <>
                   <span className={`px-2 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
                     loadedFile.type === 'PDF'
@@ -1345,14 +1345,6 @@ ${content}
                     {loadedFile.name}
                   </span>
                 </>
-              ) : (
-                <span className="text-gray-400 text-sm flex-1">プレビュー</span>
-              )}
-              {/* ライブラリ件数バッジ */}
-              {savedItems.length > 0 && (
-                <span className="bg-yellow-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                  {savedItems.length}
-                </span>
               )}
             </div>
             )}
