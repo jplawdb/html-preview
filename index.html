@@ -2272,7 +2272,7 @@ ${content}
           {/* トースト通知（overflow-hidden外に配置） */}
           {toast.show && (
             <div
-              className="fixed inset-0 z-[250] flex items-center justify-center"
+              className="fixed top-0 left-0 right-0 bottom-0 z-[250] flex items-center justify-center"
               style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
               onClick={() => setToast({ show: false, message: '' })}
             >
@@ -2284,7 +2284,7 @@ ${content}
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {toast.message}
+                ✓ {toast.message}
               </div>
             </div>
           )}
