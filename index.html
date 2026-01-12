@@ -607,7 +607,7 @@
         if (existingIndex !== -1) {
           // 登録解除
           const updated = savedItems.filter((_, i) => i !== existingIndex);
-          showToast('解除しました', 2000);
+          showToast('ライブラリから\n解除しました', 2000);
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
         } else {
@@ -620,7 +620,7 @@
             createdAt: new Date().toISOString()
           };
 
-          showToast('登録しました', 2000);
+          showToast('ライブラリに\n登録しました', 2000);
           const updated = [newItem, ...savedItems];
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
