@@ -93,14 +93,16 @@
       }); // クリア確認カウント（10回で非表示）
       const [showPreviewMenu, setShowPreviewMenu] = useState(false); // プレビューツールバーの三点メニュー
       const [hideUI, setHideUI] = useState(false); // スクロール時にUI非表示
-      const [zoomLevel, setZoomLevel] = useState(100); // プレビューのズームレベル（%）
+      const [zoomLevel, setZoomLevel] = useState(() => {
+        return parseInt(localStorage.getItem('html-preview-zoom') || '100', 10);
+      }); // プレビューのズームレベル（%）
       const lastScrollY = React.useRef(0); // 前回のスクロール位置
       const [selectedItems, setSelectedItems] = useState(new Set()); // 選択中のアイテムID
       const [syncModal, setSyncModal] = useState({ show: false, mode: null, code: null, loading: false, error: null }); // 同期モーダル
       const [syncCodeInput, setSyncCodeInput] = useState(''); // 同期コード入力
       const [editingItem, setEditingItem] = useState(null); // 編集中のアイテム { id, title }
       const [actionMenu, setActionMenu] = useState(null); // アクションメニュー用アイテム
-      const [toast, setToast] = useState({ show: false, message: '' }); // トースト通知
+      const [toast, setToast] = useState({ show: false, message: '', type: 'default' }); // トースト通知
       const [theme, setTheme] = useState(() => {
         return localStorage.getItem('html-preview-theme') || 'dark';
       }); // テーマ（dark/light）
@@ -408,20 +410,20 @@
           clearTimeout(toastTimerRef.current);
           toastTimerRef.current = null;
         }
-        setToast({ show: false, message: '' });
+        setToast({ show: false, message: '', type: 'default' });
       }, []);
 
-      const showToast = useCallback((message, duration = 2000) => {
+      const showToast = useCallback((message, duration = 2000, type = 'default') => {
         // iframeフォーカス問題の回避（Chrome iOS）
         if (document.activeElement?.tagName === 'IFRAME') {
           document.activeElement.blur();
         }
-        setToast({ show: true, message });
+        setToast({ show: true, message, type });
         if (toastTimerRef.current) {
           clearTimeout(toastTimerRef.current);
         }
         toastTimerRef.current = setTimeout(() => {
-          setToast({ show: false, message: '' });
+          setToast({ show: false, message: '', type: 'default' });
           toastTimerRef.current = null;
         }, duration);
       }, []);
@@ -521,6 +523,11 @@
         }
       }, []);
 
+      // ズームレベルをlocalStorageに永続化
+      useEffect(() => {
+        localStorage.setItem('html-preview-zoom', String(zoomLevel));
+      }, [zoomLevel]);
+
       // SVGタグを抽出（前後のテキストを無視）
       const extractSvgTag = (text) => {
         const match = text.match(/<svg[\s\S]*<\/svg>/i);
@@ -619,7 +626,7 @@
         if (existingIndex !== -1) {
           // 登録解除
           const updated = savedItems.filter((_, i) => i !== existingIndex);
-          showToast('ライブラリから\n解除しました', 2000);
+          showToast('ライブラリから\n解除しました', 2000, 'remove');
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
         } else {
@@ -632,7 +639,7 @@
             createdAt: new Date().toISOString()
           };
 
-          showToast('ライブラリに\n登録しました', 2000);
+          showToast('ライブラリに\n登録しました', 2000, 'save');
           const updated = [newItem, ...savedItems];
           setSavedItems(updated);
           localStorage.setItem('html-preview-library', JSON.stringify(updated));
@@ -2387,10 +2394,10 @@ ${content}
               onClick={dismissToast}
             >
               <div
-                className="px-6 py-3 rounded-full shadow-lg"
+                className="px-6 py-3 rounded-full shadow-lg font-bold"
                 style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
+                  backgroundColor: toast.type === 'save' ? '#FACC15' : toast.type === 'remove' ? '#ef4444' : 'var(--bg-tertiary)',
+                  color: toast.type === 'save' ? '#000' : toast.type === 'remove' ? '#fff' : 'var(--text-primary)',
                   whiteSpace: 'pre-line',
                   textAlign: 'center'
                 }}
@@ -2755,10 +2762,10 @@ ${content}
               onClick={dismissToast}
             >
               <div
-                className="px-6 py-3 rounded-full shadow-lg"
+                className="px-6 py-3 rounded-full shadow-lg font-bold"
                 style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
+                  backgroundColor: toast.type === 'save' ? '#FACC15' : toast.type === 'remove' ? '#ef4444' : 'var(--bg-tertiary)',
+                  color: toast.type === 'save' ? '#000' : toast.type === 'remove' ? '#fff' : 'var(--text-primary)',
                   whiteSpace: 'pre-line',
                   textAlign: 'center'
                 }}
