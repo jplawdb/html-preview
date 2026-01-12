@@ -413,7 +413,7 @@
         setToast({ show: false, message: '', type: 'default' });
       }, []);
 
-      const showToast = useCallback((message, duration = 2000, type = 'default', onComplete = null) => {
+      const showToast = useCallback((message, duration = 2000, type = 'default') => {
         // iframeフォーカス問題の回避（Chrome iOS）
         if (document.activeElement?.tagName === 'IFRAME') {
           document.activeElement.blur();
@@ -425,7 +425,6 @@
         toastTimerRef.current = setTimeout(() => {
           setToast({ show: false, message: '', type: 'default' });
           toastTimerRef.current = null;
-          if (onComplete) onComplete();
         }, duration);
       }, []);
 
@@ -654,10 +653,9 @@
         if (existingIndex !== -1) {
           // 登録解除
           const updated = savedItems.filter((_, i) => i !== existingIndex);
-          showToast('ライブラリから\n解除しました', 2000, 'remove', () => {
-            setSavedItems(updated);
-            localStorage.setItem('html-preview-library', JSON.stringify(updated));
-          });
+          setSavedItems(updated);
+          localStorage.setItem('html-preview-library', JSON.stringify(updated));
+          showToast('ライブラリから\n解除しました', 2000, 'remove');
         } else {
           // 新規登録
           const newItem = {
@@ -668,10 +666,9 @@
             createdAt: new Date().toISOString()
           };
           const updated = [newItem, ...savedItems];
-          showToast('ライブラリに\n登録しました', 2000, 'save', () => {
-            setSavedItems(updated);
-            localStorage.setItem('html-preview-library', JSON.stringify(updated));
-          });
+          setSavedItems(updated);
+          localStorage.setItem('html-preview-library', JSON.stringify(updated));
+          showToast('ライブラリに\n登録しました', 2000, 'save');
         }
       }, [code, savedItems, loadedFile, showToast]);
 
