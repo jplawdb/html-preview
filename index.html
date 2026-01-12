@@ -59,55 +59,6 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
     }
-    /* 長押し時の顔絵文字降下アニメーション */
-    @keyframes emoji-fall {
-      0% { transform: translateY(-50px) translateX(0) rotate(-10deg); opacity: 0; }
-      10% { opacity: 1; }
-      20% { transform: translateY(20vh) translateX(-15px) rotate(10deg); opacity: 1; }
-      40% { transform: translateY(40vh) translateX(15px) rotate(-10deg); opacity: 1; }
-      60% { transform: translateY(60vh) translateX(-15px) rotate(10deg); opacity: 1; }
-      80% { transform: translateY(80vh) translateX(10px) rotate(-5deg); opacity: 1; }
-      100% { transform: translateY(calc(100vh - 120px)) translateX(0) rotate(0deg); opacity: 1; }
-    }
-    .falling-picto {
-      position: fixed;
-      top: 0;
-      font-size: 1.6rem;
-      z-index: 9999;
-      pointer-events: none;
-      animation: emoji-fall 2s ease-out forwards;
-    }
-    /* 溜まった絵文字用コンテナ */
-    .emoji-pool {
-      position: fixed;
-      bottom: 60px;
-      left: 0;
-      right: 0;
-      height: 80px;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 9998;
-    }
-    /* 着地した絵文字 */
-    .landed-emoji {
-      position: absolute;
-      bottom: 0;
-      font-size: 1.5rem;
-      animation: bounce-land 0.3s ease-out;
-    }
-    @keyframes bounce-land {
-      0% { transform: translateY(-10px); }
-      50% { transform: translateY(3px); }
-      100% { transform: translateY(0); }
-    }
-    /* フェードアウト */
-    @keyframes emoji-fadeout {
-      0% { opacity: 1; }
-      100% { opacity: 0; }
-    }
-    .landed-emoji.fading {
-      animation: emoji-fadeout 2s ease-out forwards;
-    }
     </style>
 </head>
 <body>
@@ -167,10 +118,6 @@
       // サイドバースワイプ用
       const swipeState = useRef({ startX: 0, startY: 0, isSwiping: false, isLocked: false });
       const EDGE_WIDTH = 30; // 左端30pxからサイドバーを開く
-      // ☰ボタン長押しピクトグラム用
-      const hamburgerLongPressTimer = useRef(null);
-      const hamburgerLongPressTriggered = useRef(false);
-      const hamburgerPictoInterval = useRef(null);
 
       // サイドバースワイプ開始（左端からのスワイプでサイドバーを開く）
       const handleSidebarSwipeStart = useCallback((e) => {
@@ -1374,54 +1321,6 @@ ${html}
         }
       }, [code, currentMode]);
 
-      // 顔絵文字を1体出現させる（フッターに溜まる）
-      const spawnFallingPicto = useCallback(() => {
-        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😋', '😛', '🤪', '😜', '🤗'];
-        const el = document.createElement('div');
-        el.className = 'falling-picto';
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        el.textContent = emoji;
-        const startX = 10 + Math.random() * 80;
-        el.style.left = `${startX}%`;
-        el.style.animationDuration = `${1.8 + Math.random() * 0.8}s`;
-        document.body.appendChild(el);
-
-        // アニメーション終了時にフッターに着地
-        el.addEventListener('animationend', () => {
-          el.remove();
-          const pool = document.querySelector('.emoji-pool');
-          if (pool) {
-            const landed = document.createElement('div');
-            landed.className = 'landed-emoji';
-            landed.textContent = emoji;
-            landed.style.left = `${startX}%`;
-            pool.appendChild(landed);
-            // 溜まりすぎたら古いのを削除
-            const landedEmojis = pool.querySelectorAll('.landed-emoji:not(.fading)');
-            if (landedEmojis.length > 50) {
-              landedEmojis[0].remove();
-            }
-          }
-        });
-      }, []);
-
-      // 溜まった絵文字をフェードアウト
-      const fadeOutEmojis = useCallback(() => {
-        // 降下中の絵文字を即削除
-        document.querySelectorAll('.falling-picto').forEach(el => el.remove());
-        // 着地済みの絵文字をフェードアウト
-        const pool = document.querySelector('.emoji-pool');
-        if (pool) {
-          const emojis = pool.querySelectorAll('.landed-emoji:not(.fading)');
-          emojis.forEach((el, i) => {
-            setTimeout(() => {
-              el.classList.add('fading');
-              setTimeout(() => el.remove(), 2000);
-            }, i * 30);
-          });
-        }
-      }, []);
-
       const handleDownload = useCallback(async () => {
         const isSvg = currentMode === 'SVG';
         // UTF-8 BOMを追加して文字化け防止
@@ -1548,59 +1447,17 @@ ${content}
             {/* フローティング☰ボタン（iOS風） */}
             {!isFullscreen && activeTab === 'preview' && (
               <button
-                onTouchStart={() => {
-                  setHamburgerPressed(true);
-                  hamburgerLongPressTriggered.current = false;
-                  hamburgerLongPressTimer.current = setTimeout(() => {
-                    hamburgerLongPressTriggered.current = true;
-                    if (navigator.vibrate) navigator.vibrate(30);
-                    // 押している間ピクトグラムを出現させ続ける
-                    spawnFallingPicto();
-                    hamburgerPictoInterval.current = setInterval(() => {
-                      spawnFallingPicto();
-                    }, 150);
-                  }, 300);
-                }}
+                onTouchStart={() => setHamburgerPressed(true)}
                 onTouchEnd={() => {
-                  clearTimeout(hamburgerLongPressTimer.current);
-                  clearInterval(hamburgerPictoInterval.current);
                   setHamburgerPressed(false);
-                  if (!hamburgerLongPressTriggered.current) {
-                    setSidebarOpen(true);
-                  } else {
-                    fadeOutEmojis();
-                  }
+                  setSidebarOpen(true);
                 }}
-                onMouseDown={() => {
-                  setHamburgerPressed(true);
-                  hamburgerLongPressTriggered.current = false;
-                  hamburgerLongPressTimer.current = setTimeout(() => {
-                    hamburgerLongPressTriggered.current = true;
-                    // 押している間ピクトグラムを出現させ続ける
-                    spawnFallingPicto();
-                    hamburgerPictoInterval.current = setInterval(() => {
-                      spawnFallingPicto();
-                    }, 150);
-                  }, 300);
-                }}
+                onMouseDown={() => setHamburgerPressed(true)}
                 onMouseUp={() => {
-                  clearTimeout(hamburgerLongPressTimer.current);
-                  clearInterval(hamburgerPictoInterval.current);
                   setHamburgerPressed(false);
-                  if (!hamburgerLongPressTriggered.current) {
-                    setSidebarOpen(true);
-                  } else {
-                    fadeOutEmojis();
-                  }
+                  setSidebarOpen(true);
                 }}
-                onMouseLeave={() => {
-                  clearTimeout(hamburgerLongPressTimer.current);
-                  clearInterval(hamburgerPictoInterval.current);
-                  setHamburgerPressed(false);
-                  if (hamburgerLongPressTriggered.current) {
-                    fadeOutEmojis();
-                  }
-                }}
+                onMouseLeave={() => setHamburgerPressed(false)}
                 className={`fixed top-3 left-3 z-20 w-10 h-10 rounded-full
                   backdrop-blur-md shadow-lg
                   flex items-center justify-center
@@ -1613,15 +1470,13 @@ ${content}
                   transform: hamburgerPressed ? 'scale(1.5)' : 'scale(1)',
                   boxShadow: hamburgerPressed ? '0 0 20px rgba(255, 255, 255, 0.8)' : undefined
                 }}
-                title="ライブラリを開く（長押しで遊ぶ）"
+                title="ライブラリを開く"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)' }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
             )}
-            {/* 顔絵文字が溜まるプール */}
-            <div className="emoji-pool" />
             {/* hidden file input */}
             <input
               ref={fileInputRef}
