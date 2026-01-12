@@ -1526,21 +1526,24 @@ ${content}
                     <button
                       onClick={toggleSelectAll}
                       disabled={savedItems.length === 0}
-                      className={`px-2 py-1.5 text-white text-xs rounded-lg transition active:scale-95 ${savedItems.length === 0 ? 'bg-gray-600 opacity-50' : 'bg-slate-600 hover:bg-slate-500'}`}
+                      className={`px-2 py-1.5 text-xs rounded-lg transition active:scale-95 ${savedItems.length === 0 ? 'opacity-50' : 'bg-slate-600 hover:bg-slate-500 text-white'}`}
+                      style={savedItems.length === 0 ? { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' } : undefined}
                     >
                       {allFilteredSelected ? '全解除' : '全選択'}
                     </button>
                     <button
                       onClick={handleExport}
                       disabled={selectedItems.size === 0}
-                      className={`px-2 py-1.5 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
+                      className={`px-2 py-1.5 text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'opacity-50' : 'bg-green-600 hover:bg-green-500 text-white'}`}
+                      style={selectedItems.size === 0 ? { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' } : undefined}
                     >
                       保存
                     </button>
                     <button
                       onClick={generateSyncCode}
                       disabled={selectedItems.size === 0}
-                      className={`px-2 py-1.5 text-white text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                      className={`px-2 py-1.5 text-xs rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
+                      style={selectedItems.size === 0 ? { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' } : undefined}
                     >
                       送信
                     </button>
@@ -1561,7 +1564,8 @@ ${content}
                         }
                       }}
                       disabled={selectedItems.size === 0}
-                      className={`p-1.5 rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50 text-gray-400' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                      className={`p-1.5 rounded-lg transition active:scale-95 ${selectedItems.size === 0 ? 'opacity-50' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                      style={selectedItems.size === 0 ? { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' } : undefined}
                       title="選択項目を削除"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1609,7 +1613,7 @@ ${content}
 
                     if (filtered.length === 0) {
                       return (
-                        <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                        <div className="flex flex-col items-center justify-center h-32" style={{ color: 'var(--text-secondary)' }}>
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                           </svg>
@@ -1626,9 +1630,9 @@ ${content}
                             className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition ${
                               selectedItems.has(item.id)
                                 ? 'bg-blue-900/50 border border-blue-500'
-                                : 'bg-gray-800 border border-transparent hover:bg-gray-700'
+                                : 'border border-transparent hover:opacity-80'
                             }`}
-                            style={{ touchAction: 'pan-y' }}
+                            style={{ touchAction: 'pan-y', backgroundColor: selectedItems.has(item.id) ? undefined : 'var(--bg-secondary)' }}
                             onTouchStart={(e) => handleLibraryTouchStart(e, item)}
                             onTouchEnd={handleLibraryTouchEnd}
                             onTouchMove={handleLibraryTouchMove}
@@ -1645,8 +1649,9 @@ ${content}
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                                 selectedItems.has(item.id)
                                   ? 'bg-blue-500 border-blue-500'
-                                  : 'border-gray-500'
+                                  : ''
                               }`}
+                              style={!selectedItems.has(item.id) ? { borderColor: 'var(--text-secondary)' } : undefined}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedItems(prev => {
@@ -1668,7 +1673,8 @@ ${content}
                             </div>
                             {/* ★ */}
                             <button
-                              className={`flex-shrink-0 ${item.starred ? 'text-yellow-400' : 'text-gray-600'}`}
+                              className={`flex-shrink-0 ${item.starred ? 'text-yellow-400' : ''}`}
+                              style={!item.starred ? { color: 'var(--text-secondary)' } : undefined}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newItems = savedItems.map(i =>
@@ -1684,8 +1690,8 @@ ${content}
                             </button>
                             {/* タイトル */}
                             <div className="flex-1 min-w-0">
-                              <div className="text-white text-sm truncate">{item.title}</div>
-                              <div className="text-gray-500 text-xs">
+                              <div className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{item.title}</div>
+                              <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                 {new Date(item.updatedAt || item.createdAt).toLocaleDateString('ja-JP')}
                               </div>
                             </div>
@@ -1711,7 +1717,7 @@ ${content}
               {activeTab === 'code' ? (
                 <div className="flex flex-col w-full h-full">
                   {/* コードビューヘッダー */}
-                  <div className="flex items-center justify-between px-2 py-1.5 bg-gray-800 border-b border-gray-700">
+                  <div className="flex items-center justify-between px-2 py-1.5" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
                     <button
                       onClick={() => setActiveTab('preview')}
                       className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg transition active:scale-95"
@@ -1722,7 +1728,7 @@ ${content}
                       </svg>
                       プレビュー
                     </button>
-                    <span className="text-gray-400 text-sm">コード編集</span>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>コード編集</span>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition active:scale-95"
@@ -1743,7 +1749,8 @@ ${content}
                       onTouchStart={handleLongPressStart}
                       onTouchEnd={handleLongPressEnd}
                       onTouchMove={handleLongPressEnd}
-                      className="w-full h-full bg-gray-950 text-green-400 font-mono text-base leading-relaxed p-4 resize-none focus:outline-none selection:bg-blue-600 selection:text-white"
+                      className="w-full h-full font-mono text-base leading-relaxed p-4 resize-none focus:outline-none selection:bg-blue-600 selection:text-white"
+                      style={{ backgroundColor: theme === 'dark' ? '#030712' : 'var(--bg-tertiary)', color: theme === 'dark' ? '#4ade80' : '#166534' }}
                       placeholder="ここにHTMLまたはSVGコードを貼り付け..."
                       spellCheck={false}
                       autoCapitalize="off"
@@ -1768,7 +1775,7 @@ ${content}
                   <div className="relative flex-1 overflow-hidden">
                     {/* コードがない場合：ペースト誘導表示 */}
                     {!code ? (
-                      <div className="w-full h-full bg-gray-800 flex flex-col items-center justify-center text-gray-400">
+                      <div className="w-full h-full flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
                         <button
                           onClick={handlePaste}
                           className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-purple-900/30 hover:bg-purple-900/50 border border-purple-500/30 transition active:scale-95"
@@ -1778,7 +1785,7 @@ ${content}
                           </svg>
                           <span className="text-lg font-medium text-purple-300">タップしてペースト</span>
                         </button>
-                        <p className="mt-4 text-sm text-gray-500">HTML/SVGをプレビュー</p>
+                        <p className="mt-4 text-sm" style={{ color: 'var(--text-secondary)' }}>HTML/SVGをプレビュー</p>
                       </div>
                     ) : currentMode === 'SVG' ? (
                       <div
@@ -1793,9 +1800,9 @@ ${content}
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
                         onScroll={handlePreviewScroll}
-                        className="w-full h-full bg-white p-4 resize-none border-0 outline-none font-sans text-gray-800 leading-relaxed"
+                        className="w-full h-full p-4 resize-none border-0 outline-none font-sans leading-relaxed"
                         placeholder="テキストを入力または編集..."
-                        style={{ userSelect: 'text', WebkitUserSelect: 'text', fontSize: `${zoomLevel}%` }}
+                        style={{ userSelect: 'text', WebkitUserSelect: 'text', fontSize: `${zoomLevel}%`, backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                       />
                     ) : (
                       <div className="w-full h-full relative overflow-auto">
@@ -1960,7 +1967,8 @@ ${content}
                               <button
                                 onClick={() => { handleShare(); setShowPreviewMenu(false); }}
                                 disabled={isShortening}
-                                className="p-2 rounded-lg bg-gray-600 hover:bg-gray-500 text-white transition active:scale-95"
+                                className="p-2 rounded-lg hover:opacity-80 transition active:scale-95"
+                                style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                                 title="共有"
                               >
                                 {isShortening ? (
@@ -2071,16 +2079,16 @@ ${content}
             {/* 同期モーダル */}
             {syncModal.show && (
               <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[300]" onClick={closeSyncModal}>
-                <div className="bg-gray-900 rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
                   {syncModal.mode === 'generate' ? (
                     <>
                       <div className="p-6 text-center">
-                        <h3 className="text-white font-bold text-lg mb-2">同期コード</h3>
-                        <p className="text-gray-400 text-sm mb-4">{syncModal.count}件のデータ</p>
+                        <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--text-primary)' }}>同期コード</h3>
+                        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{syncModal.count}件のデータ</p>
                         {syncModal.loading ? (
                           <div className="py-8">
                             <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div>
-                            <p className="text-gray-400 text-sm mt-4">コード発行中...</p>
+                            <p className="text-sm mt-4" style={{ color: 'var(--text-secondary)' }}>コード発行中...</p>
                           </div>
                         ) : syncModal.error ? (
                           <div className="py-8">
@@ -2088,17 +2096,17 @@ ${content}
                           </div>
                         ) : (
                           <>
-                            <div className="bg-gray-800 rounded-lg py-6 px-4">
-                              <p className="text-5xl font-mono font-bold text-white tracking-[0.3em]">{syncModal.code}</p>
+                            <div className="rounded-lg py-6 px-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                              <p className="text-5xl font-mono font-bold tracking-[0.3em]" style={{ color: 'var(--text-primary)' }}>{syncModal.code}</p>
                             </div>
-                            <p className="text-gray-500 text-xs mt-4">1分間有効・1回限り</p>
+                            <p className="text-xs mt-4" style={{ color: 'var(--text-secondary)' }}>1分間有効・1回限り</p>
                           </>
                         )}
                       </div>
-                      <div className="border-t border-gray-700">
+                      <div style={{ borderTop: '1px solid var(--border)' }}>
                         <button
                           onClick={closeSyncModal}
-                          className="w-full py-4 text-blue-400 font-medium text-base active:bg-gray-800"
+                          className="w-full py-4 text-blue-400 font-medium text-base hover:opacity-80 active:opacity-60"
                         >
                           閉じる
                         </button>
@@ -2107,8 +2115,8 @@ ${content}
                   ) : (
                     <>
                       <div className="p-6 text-center">
-                        <h3 className="text-white font-bold text-lg mb-2">同期コード入力</h3>
-                        <p className="text-gray-400 text-sm mb-4">デスクトップで表示されたコードを入力</p>
+                        <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--text-primary)' }}>同期コード入力</h3>
+                        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>デスクトップで表示されたコードを入力</p>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -2116,7 +2124,8 @@ ${content}
                           maxLength={4}
                           value={syncCodeInput}
                           onChange={(e) => setSyncCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                          className="w-full text-center text-4xl font-mono font-bold tracking-[0.3em] bg-gray-800 text-white rounded-lg py-4 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full text-center text-4xl font-mono font-bold tracking-[0.3em] rounded-lg py-4 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                           placeholder="0000"
                           autoFocus
                         />
@@ -2124,17 +2133,19 @@ ${content}
                           <p className="text-red-400 text-sm mt-3">{syncModal.error}</p>
                         )}
                       </div>
-                      <div className="border-t border-gray-700 flex">
+                      <div className="flex" style={{ borderTop: '1px solid var(--border)' }}>
                         <button
                           onClick={closeSyncModal}
-                          className="flex-1 py-4 text-gray-400 font-medium text-base active:bg-gray-800 border-r border-gray-700"
+                          className="flex-1 py-4 font-medium text-base hover:opacity-80 active:opacity-60"
+                          style={{ color: 'var(--text-secondary)', borderRight: '1px solid var(--border)' }}
                         >
                           キャンセル
                         </button>
                         <button
                           onClick={fetchSyncData}
                           disabled={syncModal.loading || syncCodeInput.length !== 4}
-                          className={`flex-1 py-4 font-medium text-base active:bg-gray-800 ${syncModal.loading || syncCodeInput.length !== 4 ? 'text-gray-600' : 'text-blue-400'}`}
+                          className={`flex-1 py-4 font-medium text-base hover:opacity-80 active:opacity-60 ${syncModal.loading || syncCodeInput.length !== 4 ? 'opacity-50' : ''}`}
+                          style={{ color: syncModal.loading || syncCodeInput.length !== 4 ? 'var(--text-secondary)' : '#60A5FA' }}
                         >
                           {syncModal.loading ? '取得中...' : '取得'}
                         </button>
@@ -2148,9 +2159,9 @@ ${content}
             {/* タイトル編集モーダル（モバイル） */}
             {editingItem && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]" onClick={() => setEditingItem(null)}>
-                <div className="bg-gray-900 rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
                   <div className="p-4">
-                    <h3 className="text-white font-bold text-base mb-3">タイトル変更</h3>
+                    <h3 className="font-bold text-base mb-3" style={{ color: 'var(--text-primary)' }}>タイトル変更</h3>
                     <input
                       type="text"
                       value={editingItem.title}
@@ -2162,20 +2173,22 @@ ${content}
                           setEditingItem(null);
                         }
                       }}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                       autoFocus
                     />
                   </div>
-                  <div className="flex border-t border-gray-700">
+                  <div className="flex" style={{ borderTop: '1px solid var(--border)' }}>
                     <button
                       onClick={() => setEditingItem(null)}
-                      className="flex-1 py-3 text-gray-400 font-medium text-base border-r border-gray-700 active:bg-gray-800"
+                      className="flex-1 py-3 font-medium text-base hover:opacity-80 active:opacity-60"
+                      style={{ color: 'var(--text-secondary)', borderRight: '1px solid var(--border)' }}
                     >
                       キャンセル
                     </button>
                     <button
                       onClick={() => updateTitle(editingItem.id, editingItem.title)}
-                      className="flex-1 py-3 text-blue-400 font-medium text-base active:bg-gray-800"
+                      className="flex-1 py-3 text-blue-400 font-medium text-base hover:opacity-80 active:opacity-60"
                     >
                       保存
                     </button>
@@ -2188,19 +2201,19 @@ ${content}
             {actionMenu && (
               <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-[200] p-4" onClick={() => setActionMenu(null)}>
                 {/* 上部：アクションメニュー */}
-                <div className="bg-gray-900 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl mb-3" onClick={e => e.stopPropagation()}>
-                  <div className="p-3 border-b border-gray-700">
-                    <p className="text-white font-medium text-sm truncate">{actionMenu.title}</p>
+                <div className="rounded-xl w-full max-w-sm overflow-hidden shadow-2xl mb-3" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
+                  <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                    <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{actionMenu.title}</p>
                   </div>
                   <div className="grid grid-cols-5 gap-1 p-2">
                     <button
                       onClick={() => { handleLoad(actionMenu); setActionMenu(null); }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg active:bg-gray-700 transition"
+                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
-                      <span className="text-gray-300 text-xs">開く</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>開く</span>
                     </button>
                     <button
                       onClick={async () => {
@@ -2212,39 +2225,39 @@ ${content}
                           alert('コピーに失敗しました');
                         }
                       }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg active:bg-gray-700 transition"
+                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                       </svg>
-                      <span className="text-gray-300 text-xs">コピー</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>コピー</span>
                     </button>
                     <button
                       onClick={() => { toggleStar(actionMenu.id); setActionMenu(null); }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg active:bg-gray-700 transition"
+                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${actionMenu.starred ? 'text-yellow-400' : 'text-gray-400'}`} fill={actionMenu.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${actionMenu.starred ? 'text-yellow-400' : ''}`} style={{ color: actionMenu.starred ? undefined : 'var(--text-secondary)' }} fill={actionMenu.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                       </svg>
-                      <span className="text-gray-300 text-xs">{actionMenu.starred ? '★解除' : '★'}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{actionMenu.starred ? '★解除' : '★'}</span>
                     </button>
                     <button
                       onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg active:bg-gray-700 transition"
+                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      <span className="text-gray-300 text-xs">編集</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>編集</span>
                     </button>
                     <button
                       onClick={() => { handleDelete(actionMenu.id); setActionMenu(null); }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg active:bg-gray-700 transition"
+                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      <span className="text-gray-300 text-xs">削除</span>
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>削除</span>
                     </button>
                   </div>
                 </div>
@@ -2269,7 +2282,8 @@ ${content}
                 {/* 閉じるボタン */}
                 <button
                   onClick={() => setActionMenu(null)}
-                  className="mt-3 px-6 py-2 bg-gray-800 text-gray-300 rounded-full text-sm active:bg-gray-700"
+                  className="mt-3 px-6 py-2 rounded-full text-sm active:opacity-80"
+                  style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
                 >
                   閉じる
                 </button>
@@ -2287,13 +2301,16 @@ ${content}
           <div className="px-6 py-3 flex items-center justify-between" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
             <div className="flex items-center gap-3">
               <h1 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>HTML / SVG プレビューツール</h1>
-              <span className={`px-2 py-0.5 text-xs rounded font-medium ${
-                currentMode === 'SVG'
-                  ? 'bg-purple-600 text-white'
-                  : currentMode === 'TEXT'
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-blue-600 text-white'
-              }`}>
+              <span
+                className={`px-2 py-0.5 text-xs rounded font-medium ${
+                  currentMode === 'SVG'
+                    ? 'bg-purple-600 text-white'
+                    : currentMode === 'TEXT'
+                    ? 'text-white'
+                    : 'bg-blue-600 text-white'
+                }`}
+                style={currentMode === 'TEXT' ? { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' } : undefined}
+              >
                 {currentMode}
               </span>
             </div>
@@ -2317,7 +2334,8 @@ ${content}
                       }
                     });
                   }}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded transition"
+                  className="px-4 py-2 hover:opacity-80 text-sm rounded transition"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                 >
                   🗑 クリア
                 </button>
@@ -2365,14 +2383,15 @@ ${content}
           <div className="flex-1 flex overflow-hidden">
             {/* 左: コードエディタ */}
             {!isFullscreen && (
-            <div className="w-1/3 flex flex-col border-r border-gray-700">
-              <div className="bg-gray-800 px-4 py-2 text-gray-400 text-sm font-medium border-b border-gray-700">
+            <div className="w-1/3 flex flex-col" style={{ borderRight: '1px solid var(--border)' }}>
+              <div className="px-4 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 コード
               </div>
               <textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="flex-1 bg-gray-950 text-green-400 font-mono text-sm p-4 resize-none focus:outline-none"
+                className="flex-1 text-green-400 font-mono text-sm p-4 resize-none focus:outline-none"
+                style={{ backgroundColor: theme === 'dark' ? '#030712' : 'var(--bg-tertiary)', color: theme === 'dark' ? '#4ade80' : '#166534' }}
                 placeholder="ここにHTMLまたはSVGコードを貼り付けてください..."
                 spellCheck={false}
               />
@@ -2380,13 +2399,13 @@ ${content}
             )}
 
             {/* 中央: プレビュー */}
-            <div className={`${isFullscreen ? 'w-full h-full' : 'w-1/3'} flex flex-col ${isFullscreen ? '' : 'border-r border-gray-700'} relative`}>
+            <div className={`${isFullscreen ? 'w-full h-full' : 'w-1/3'} flex flex-col relative`} style={isFullscreen ? {} : { borderRight: '1px solid var(--border)' }}>
               {!isFullscreen && (
-              <div className="bg-gray-800 px-4 py-2 text-gray-400 text-sm font-medium border-b border-gray-700 flex items-center justify-between">
+              <div className="px-4 py-2 text-sm font-medium flex items-center justify-between" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 <span>プレビュー</span>
                 <button
                   onClick={() => setIsFullscreen(true)}
-                  className="p-1 hover:bg-gray-700 rounded transition"
+                  className="p-1 hover:opacity-70 rounded transition"
                   title="最大化"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2403,8 +2422,8 @@ ${content}
                     dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
                   />
                 ) : currentMode === 'TEXT' ? (
-                  <div className="w-full h-full bg-white overflow-auto p-4">
-                    <pre className="whitespace-pre-wrap break-words font-sans text-gray-800 text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>{debouncedCode}</pre>
+                  <div className="w-full h-full overflow-auto p-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                    <pre className="whitespace-pre-wrap break-words font-sans text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text', color: 'var(--text-primary)' }}>{debouncedCode}</pre>
                   </div>
                 ) : (
                   <iframe
@@ -2419,7 +2438,8 @@ ${content}
               {isFullscreen && (
                 <button
                   onClick={() => setIsFullscreen(false)}
-                  className="absolute top-4 right-4 p-2 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg shadow-lg transition z-50"
+                  className="absolute top-4 right-4 p-2 rounded-lg shadow-lg transition z-50 hover:opacity-80"
+                  style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                   title="元に戻す (ESC)"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2432,14 +2452,14 @@ ${content}
             {/* 右: ライブラリ */}
             {!isFullscreen && (
             <div className="w-1/3 flex flex-col">
-              <div className="bg-gray-800 px-4 py-2 text-gray-400 text-sm font-medium border-b border-gray-700">
+              <div className="px-4 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 ライブラリ {savedItems.length > 0 && `(${savedItems.length})`}
               </div>
               {/* 検索バー */}
-              <div className="bg-gray-900 px-3 py-2 border-b border-gray-700">
+              <div className="px-3 py-2" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input
@@ -2447,12 +2467,14 @@ ${content}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="検索..."
-                      className="w-full pl-9 pr-8 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-500"
+                      className="w-full pl-9 pr-8 py-1.5 rounded text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                      style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 hover:opacity-70"
+                        style={{ color: 'var(--text-secondary)' }}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2463,11 +2485,12 @@ ${content}
                   {/* ★フィルターボタン */}
                   <button
                     onClick={() => setShowStarredOnly(!showStarredOnly)}
-                    className={`p-1.5 rounded border transition flex-shrink-0 ${
-                      showStarredOnly
-                        ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
-                        : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-yellow-400'
-                    }`}
+                    className="p-1.5 rounded border transition flex-shrink-0"
+                    style={{
+                      backgroundColor: showStarredOnly ? (theme === 'dark' ? 'rgba(250, 204, 21, 0.2)' : 'rgba(218, 119, 86, 0.2)') : 'var(--bg-secondary)',
+                      borderColor: showStarredOnly ? 'var(--accent)' : 'var(--border)',
+                      color: showStarredOnly ? 'var(--accent)' : 'var(--text-secondary)'
+                    }}
                     title={showStarredOnly ? '全て表示' : '★のみ表示'}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={showStarredOnly ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
@@ -2477,7 +2500,7 @@ ${content}
                 </div>
               </div>
               {/* 同期ボタン */}
-              <div className="bg-gray-900 px-3 py-2 border-b border-gray-700 flex gap-2">
+              <div className="px-3 py-2 flex gap-2" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border)' }}>
                 <button
                   onClick={openSyncInput}
                   className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded transition flex items-center justify-center gap-1"
@@ -2498,7 +2521,7 @@ ${content}
                 </button>
               </div>
               {/* エクスポート/インポート */}
-              <div className="bg-gray-900 px-3 py-2 border-b border-gray-700 flex gap-2 flex-wrap">
+              <div className="px-3 py-2 flex gap-2 flex-wrap" style={{ backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border)' }}>
                 <input
                   ref={importInputRef}
                   type="file"
@@ -2515,22 +2538,24 @@ ${content}
                 <button
                   onClick={toggleSelectAll}
                   disabled={savedItems.length === 0}
-                  className={`py-1 px-3 text-white text-xs rounded transition ${savedItems.length === 0 ? 'bg-gray-600 opacity-50' : 'bg-slate-600 hover:bg-slate-500'}`}
+                  className={`py-1 px-3 text-white text-xs rounded transition ${savedItems.length === 0 ? 'opacity-50' : 'bg-slate-600 hover:bg-slate-500'}`}
+                  style={savedItems.length === 0 ? { backgroundColor: 'var(--bg-tertiary)' } : {}}
                 >
                   {allFilteredSelected ? '全解除' : '全選択'}
                 </button>
                 <button
                   onClick={handleExport}
                   disabled={selectedItems.size === 0}
-                  className={`py-1 px-3 text-white text-xs rounded transition ${selectedItems.size === 0 ? 'bg-gray-600 opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
+                  className={`py-1 px-3 text-white text-xs rounded transition ${selectedItems.size === 0 ? 'opacity-50' : 'bg-green-600 hover:bg-green-500'}`}
+                  style={selectedItems.size === 0 ? { backgroundColor: 'var(--bg-tertiary)' } : {}}
                 >
                   {selectedItems.size > 0 ? `保存(${selectedItems.size})` : '保存'}
                 </button>
               </div>
               {/* アイテムリスト */}
-              <div className="flex-1 overflow-auto bg-gray-950 p-2">
+              <div className="flex-1 overflow-auto p-2" style={{ backgroundColor: theme === 'dark' ? '#030712' : 'var(--bg-tertiary)' }}>
                 {savedItems.length === 0 ? (
-                  <div className="text-gray-500 text-center py-8 text-sm">
+                  <div className="text-center py-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     <p>まだ登録がありません</p>
                   </div>
                 ) : (() => {
@@ -2543,7 +2568,7 @@ ${content}
                            item.type.toLowerCase().includes(query);
                   });
                   return filteredItems.length === 0 ? (
-                    <div className="text-gray-500 text-center py-8 text-sm">
+                    <div className="text-center py-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
                       <p>{showStarredOnly ? '★付きの項目なし' : `「${searchQuery}」に一致する項目なし`}</p>
                     </div>
                   ) : (
@@ -2551,10 +2576,12 @@ ${content}
                       {filteredItems.map(item => (
                         <div
                           key={item.id}
-                          className={`bg-gray-800 rounded p-2 flex items-center gap-2 hover:bg-gray-700 cursor-pointer transition text-sm ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500' : ''}`}
+                          className={`rounded p-2 flex items-center gap-2 hover:opacity-80 cursor-pointer transition text-sm ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500' : ''}`}
+                          style={{ backgroundColor: 'var(--bg-secondary)' }}
                         >
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-500'}`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : ''}`}
+                            style={!selectedItems.has(item.id) ? { borderColor: 'var(--text-secondary)' } : undefined}
                             onClick={() => toggleSelectItem(item.id)}
                           >
                             {selectedItems.has(item.id) && (
@@ -2567,14 +2594,16 @@ ${content}
                             <span className="text-yellow-400 flex-shrink-0 text-sm">★</span>
                           )}
                           <span
-                            className="text-white flex-1 truncate"
+                            className="flex-1 truncate"
+                            style={{ color: 'var(--text-primary)' }}
                             onClick={() => handleLoad(item)}
                           >
                             {item.title}
                           </span>
                           <button
                             onClick={(e) => { e.stopPropagation(); setActionMenu(item); }}
-                            className="p-1 text-gray-400 hover:text-white transition flex-shrink-0"
+                            className="p-1 hover:opacity-70 transition flex-shrink-0"
+                            style={{ color: 'var(--text-secondary)' }}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                               <circle cx="12" cy="5" r="2"/>
@@ -2620,9 +2649,9 @@ ${content}
           {/* タイトル編集モーダル */}
           {editingItem && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]" onClick={() => setEditingItem(null)}>
-              <div className="bg-gray-900 rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
                 <div className="p-4">
-                  <h3 className="text-white font-bold text-base mb-3">タイトル変更</h3>
+                  <h3 className="font-bold text-base mb-3" style={{ color: 'var(--text-primary)' }}>タイトル変更</h3>
                   <input
                     type="text"
                     value={editingItem.title}
@@ -2634,20 +2663,22 @@ ${content}
                         setEditingItem(null);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-lg focus:outline-none focus:border-blue-500"
+                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                     autoFocus
                   />
                 </div>
-                <div className="flex border-t border-gray-700">
+                <div className="flex" style={{ borderTop: '1px solid var(--border)' }}>
                   <button
                     onClick={() => setEditingItem(null)}
-                    className="flex-1 py-3 text-gray-400 font-medium text-base border-r border-gray-700 active:bg-gray-800"
+                    className="flex-1 py-3 font-medium text-base active:opacity-70"
+                    style={{ color: 'var(--text-secondary)', borderRight: '1px solid var(--border)' }}
                   >
                     キャンセル
                   </button>
                   <button
                     onClick={() => updateTitle(editingItem.id, editingItem.title)}
-                    className="flex-1 py-3 text-blue-400 font-medium text-base active:bg-gray-800"
+                    className="flex-1 py-3 text-blue-400 font-medium text-base active:opacity-70"
                   >
                     保存
                   </button>
@@ -2659,19 +2690,19 @@ ${content}
           {/* アクションメニュー */}
           {actionMenu && (
             <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[200]" onClick={() => setActionMenu(null)}>
-              <div className="bg-gray-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-xs overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-3 border-b border-gray-700">
-                  <p className="text-white font-medium text-sm truncate">{actionMenu.title}</p>
+              <div className="rounded-t-2xl sm:rounded-xl w-full sm:max-w-xs overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
+                <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{actionMenu.title}</p>
                 </div>
                 <div className="py-1">
                   <button
                     onClick={() => { handleLoad(actionMenu); setActionMenu(null); }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-700 transition"
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    <span className="text-white">読み込み</span>
+                    <span style={{ color: 'var(--text-primary)' }}>読み込み</span>
                   </button>
                   <button
                     onClick={async () => {
@@ -2683,45 +2714,46 @@ ${content}
                         alert('コピーに失敗しました');
                       }
                     }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-700 transition"
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                     </svg>
-                    <span className="text-white">コードをコピー</span>
+                    <span style={{ color: 'var(--text-primary)' }}>コードをコピー</span>
                   </button>
                   <button
                     onClick={() => { toggleStar(actionMenu.id); setActionMenu(null); }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-700 transition"
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${actionMenu.starred ? 'text-yellow-400' : 'text-gray-400'}`} fill={actionMenu.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${actionMenu.starred ? 'text-yellow-400' : ''}`} style={!actionMenu.starred ? { color: 'var(--text-secondary)' } : undefined} fill={actionMenu.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
-                    <span className="text-white">{actionMenu.starred ? '★を外す' : '★をつける'}</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{actionMenu.starred ? '★を外す' : '★をつける'}</span>
                   </button>
                   <button
                     onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-700 transition"
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    <span className="text-white">タイトル編集</span>
+                    <span style={{ color: 'var(--text-primary)' }}>タイトル編集</span>
                   </button>
                   <button
                     onClick={() => { handleDelete(actionMenu.id); setActionMenu(null); }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-800 active:bg-gray-700 transition"
+                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    <span className="text-white">削除</span>
+                    <span style={{ color: 'var(--text-primary)' }}>削除</span>
                   </button>
                 </div>
-                <div className="p-2 border-t border-gray-700">
+                <div className="p-2" style={{ borderTop: '1px solid var(--border)' }}>
                   <button
                     onClick={() => setActionMenu(null)}
-                    className="w-full py-2 text-gray-400 font-medium text-sm active:bg-gray-800 rounded-lg"
+                    className="w-full py-2 font-medium text-sm active:opacity-70 rounded-lg"
+                    style={{ color: 'var(--text-secondary)' }}
                   >
                     キャンセル
                   </button>
@@ -2733,16 +2765,16 @@ ${content}
           {/* 同期モーダル */}
           {syncModal.show && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[300]" onClick={closeSyncModal}>
-              <div className="bg-gray-900 rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
                 {syncModal.mode === 'generate' ? (
                   <>
                     <div className="p-6 text-center">
-                      <h3 className="text-white font-bold text-lg mb-2">同期コード</h3>
-                      <p className="text-gray-400 text-sm mb-4">{syncModal.count}件のデータ</p>
+                      <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--text-primary)' }}>同期コード</h3>
+                      <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{syncModal.count}件のデータ</p>
                       {syncModal.loading ? (
                         <div className="py-8">
                           <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div>
-                          <p className="text-gray-400 text-sm mt-4">コード発行中...</p>
+                          <p className="text-sm mt-4" style={{ color: 'var(--text-secondary)' }}>コード発行中...</p>
                         </div>
                       ) : syncModal.error ? (
                         <div className="py-8">
@@ -2750,17 +2782,17 @@ ${content}
                         </div>
                       ) : (
                         <>
-                          <div className="bg-gray-800 rounded-lg py-6 px-4">
-                            <p className="text-5xl font-mono font-bold text-white tracking-[0.3em]">{syncModal.code}</p>
+                          <div className="rounded-lg py-6 px-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                            <p className="text-5xl font-mono font-bold tracking-[0.3em]" style={{ color: 'var(--text-primary)' }}>{syncModal.code}</p>
                           </div>
-                          <p className="text-gray-500 text-xs mt-4">1分間有効・1回限り</p>
+                          <p className="text-xs mt-4" style={{ color: 'var(--text-secondary)' }}>1分間有効・1回限り</p>
                         </>
                       )}
                     </div>
-                    <div className="border-t border-gray-700">
+                    <div style={{ borderTop: '1px solid var(--border)' }}>
                       <button
                         onClick={closeSyncModal}
-                        className="w-full py-4 text-blue-400 font-medium text-base active:bg-gray-800"
+                        className="w-full py-4 text-blue-400 font-medium text-base active:opacity-70"
                       >
                         閉じる
                       </button>
@@ -2769,8 +2801,8 @@ ${content}
                 ) : (
                   <>
                     <div className="p-6 text-center">
-                      <h3 className="text-white font-bold text-lg mb-2">同期コード入力</h3>
-                      <p className="text-gray-400 text-sm mb-4">デスクトップで表示されたコードを入力</p>
+                      <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--text-primary)' }}>同期コード入力</h3>
+                      <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>デスクトップで表示されたコードを入力</p>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -2778,7 +2810,8 @@ ${content}
                         maxLength={4}
                         value={syncCodeInput}
                         onChange={(e) => setSyncCodeInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        className="w-full text-center text-4xl font-mono font-bold tracking-[0.3em] bg-gray-800 text-white rounded-lg py-4 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full text-center text-4xl font-mono font-bold tracking-[0.3em] rounded-lg py-4 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                         placeholder="0000"
                         autoFocus
                       />
@@ -2786,17 +2819,18 @@ ${content}
                         <p className="text-red-400 text-sm mt-3">{syncModal.error}</p>
                       )}
                     </div>
-                    <div className="border-t border-gray-700 flex">
+                    <div className="flex" style={{ borderTop: '1px solid var(--border)' }}>
                       <button
                         onClick={closeSyncModal}
-                        className="flex-1 py-4 text-gray-400 font-medium text-base active:bg-gray-800 border-r border-gray-700"
+                        className="flex-1 py-4 font-medium text-base active:opacity-70"
+                        style={{ color: 'var(--text-secondary)', borderRight: '1px solid var(--border)' }}
                       >
                         キャンセル
                       </button>
                       <button
                         onClick={fetchSyncData}
                         disabled={syncModal.loading || syncCodeInput.length !== 4}
-                        className={`flex-1 py-4 font-medium text-base active:bg-gray-800 ${syncModal.loading || syncCodeInput.length !== 4 ? 'text-gray-600' : 'text-blue-400'}`}
+                        className={`flex-1 py-4 font-medium text-base active:opacity-70 ${syncModal.loading || syncCodeInput.length !== 4 ? 'opacity-40' : 'text-blue-400'}`}
                       >
                         {syncModal.loading ? '取得中...' : '取得'}
                       </button>
