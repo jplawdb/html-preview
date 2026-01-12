@@ -71,6 +71,76 @@
     // 同期サービスのエンドポイント
     const SYNC_URL = 'https://html-preview-sync.takalovesthailand.workers.dev';
 
+    // IndexedDB ヘルパー（localStorage の代替、容量制限なし）
+    const DB_NAME = 'html-preview-db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'library';
+
+    const openDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+      });
+    };
+
+    const saveToIndexedDB = async (items) => {
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      // 全削除して再保存（シンプルな実装）
+      store.clear();
+      items.forEach(item => store.put(item));
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    };
+
+    const loadFromIndexedDB = async () => {
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+      return new Promise((resolve, reject) => {
+        request.onsuccess = () => {
+          db.close();
+          // IDで降順ソート（新しい順）
+          const items = request.result.sort((a, b) => b.id - a.id);
+          resolve(items);
+        };
+        request.onerror = () => { db.close(); reject(request.error); };
+      });
+    };
+
+    // localStorage → IndexedDB 移行
+    const migrateFromLocalStorage = async () => {
+      const MIGRATED_KEY = 'html-preview-migrated-to-idb';
+      if (localStorage.getItem(MIGRATED_KEY)) return null; // 移行済み
+
+      const saved = localStorage.getItem('html-preview-library');
+      if (saved) {
+        try {
+          const items = JSON.parse(saved);
+          await saveToIndexedDB(items);
+          localStorage.setItem(MIGRATED_KEY, '1');
+          // 古いデータは残しておく（バックアップとして）
+          console.log('Migrated to IndexedDB:', items.length, 'items');
+          return items;
+        } catch (e) {
+          console.error('Migration failed:', e);
+        }
+      }
+      localStorage.setItem(MIGRATED_KEY, '1');
+      return null;
+    };
+
     function HTMLPreviewer() {
       const [code, setCode] = useState('');
 
@@ -518,16 +588,31 @@
         return () => window.removeEventListener('message', handleMessage);
       }, []);
 
-      // LocalStorageから読み込み
+      // IndexedDBから読み込み（初回はlocalStorageから移行）
       useEffect(() => {
-        try {
-          const saved = localStorage.getItem('html-preview-library');
-          if (saved) {
-            setSavedItems(JSON.parse(saved));
+        const loadData = async () => {
+          try {
+            // まず移行を試みる（既存ユーザー対応）
+            const migrated = await migrateFromLocalStorage();
+            if (migrated) {
+              setSavedItems(migrated);
+              return;
+            }
+            // IndexedDBから読み込み
+            const items = await loadFromIndexedDB();
+            setSavedItems(items);
+          } catch (e) {
+            console.error('Failed to load from IndexedDB:', e);
+            // フォールバック: localStorageから読み込み
+            try {
+              const saved = localStorage.getItem('html-preview-library');
+              if (saved) setSavedItems(JSON.parse(saved));
+            } catch (e2) {
+              console.error('Fallback also failed:', e2);
+            }
           }
-        } catch (e) {
-          console.error('Failed to load from localStorage:', e);
-        }
+        };
+        loadData();
       }, []);
 
       // URLパラメータからコードを読み込み（フラグメント#を使用）
@@ -654,7 +739,7 @@
           // 登録解除
           const updated = savedItems.filter((_, i) => i !== existingIndex);
           setSavedItems(updated);
-          localStorage.setItem('html-preview-library', JSON.stringify(updated));
+          saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
           showToast('ライブラリから\n解除しました', 2000, 'remove');
         } else {
           // 新規登録
@@ -667,7 +752,7 @@
           };
           const updated = [newItem, ...savedItems];
           setSavedItems(updated);
-          localStorage.setItem('html-preview-library', JSON.stringify(updated));
+          saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
           showToast('ライブラリに\n登録しました', 2000, 'save');
         }
       }, [code, savedItems, loadedFile, showToast]);
@@ -680,7 +765,7 @@
           onConfirm: () => {
             const updated = savedItems.filter(item => item.id !== id);
             setSavedItems(updated);
-            localStorage.setItem('html-preview-library', JSON.stringify(updated));
+            saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
             setConfirmDialog({ show: false, message: '', onConfirm: null });
           }
         });
@@ -722,7 +807,7 @@
           item.id === id ? { ...item, starred: !item.starred } : item
         );
         setSavedItems(updated);
-        localStorage.setItem('html-preview-library', JSON.stringify(updated));
+        saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
         if (navigator.vibrate) navigator.vibrate(30);
       }, [savedItems]);
 
@@ -733,7 +818,7 @@
           item.id === id ? { ...item, title: newTitle.trim() } : item
         );
         setSavedItems(updated);
-        localStorage.setItem('html-preview-library', JSON.stringify(updated));
+        saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
         setEditingItem(null);
         if (navigator.vibrate) navigator.vibrate(30);
       }, [savedItems]);
@@ -904,7 +989,7 @@ ${svgCode}
             // IDでソート（新しい順）
             merged.sort((a, b) => b.id - a.id);
             setSavedItems(merged);
-            localStorage.setItem('html-preview-library', JSON.stringify(merged));
+            saveToIndexedDB(merged).catch(e => console.error('Save error:', e));
             alert(`インポート完了！（${imported.length}件）`);
             if (navigator.vibrate) navigator.vibrate(50);
           } catch (err) {
@@ -1007,23 +1092,12 @@ ${svgCode}
             const merged = [...imported.filter(item => existingIds.has(item.id)), ...savedItems.filter(item => !imported.find(i => i.id === item.id)), ...newItems];
             merged.sort((a, b) => b.id - a.id);
 
-            // localStorageへの保存（容量チェック付き）
-            try {
-              const jsonData = JSON.stringify(merged);
-              localStorage.setItem('html-preview-library', jsonData);
-              setSavedItems(merged);
-              setSyncModal({ show: false, mode: null, code: null, loading: false, error: null });
-              alert(`インポート完了！（${imported.length}件）`);
-              if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            } catch (storageError) {
-              if (storageError.name === 'QuotaExceededError' || storageError.message.includes('quota')) {
-                // 容量超過: 既存データのサイズを計算して表示
-                const currentSize = localStorage.getItem('html-preview-library')?.length || 0;
-                const currentKB = Math.round(currentSize / 1024);
-                throw new Error(`ストレージ容量が不足しています（現在約${currentKB}KB使用中）。\nライブラリから不要なアイテムを削除してから再度お試しください。`);
-              }
-              throw storageError;
-            }
+            // IndexedDBへ保存（容量制限なし）
+            setSavedItems(merged);
+            await saveToIndexedDB(merged);
+            setSyncModal({ show: false, mode: null, code: null, loading: false, error: null });
+            alert(`インポート完了！（${imported.length}件）`);
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
           } else {
             throw new Error(result.error || 'コードが見つかりません');
           }
@@ -1775,7 +1849,7 @@ ${content}
                             onConfirm: () => {
                               const newItems = savedItems.filter(item => !selectedItems.has(item.id));
                               setSavedItems(newItems);
-                              localStorage.setItem('html-preview-library', JSON.stringify(newItems));
+                              saveToIndexedDB(newItems).catch(e => console.error('Save error:', e));
                               setSelectedItems(new Set());
                               setConfirmDialog({ show: false, message: '', onConfirm: null });
                             }
@@ -1911,7 +1985,7 @@ ${content}
                                   i.id === item.id ? { ...i, starred: !i.starred } : i
                                 );
                                 setSavedItems(newItems);
-                                localStorage.setItem('html-preview-library', JSON.stringify(newItems));
+                                saveToIndexedDB(newItems).catch(e => console.error('Save error:', e));
                               }}
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={item.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
