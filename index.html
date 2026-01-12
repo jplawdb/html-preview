@@ -1457,16 +1457,11 @@ ${content}
             {/* フローティング☰ボタン（iOS風） */}
             {!isFullscreen && activeTab === 'preview' && (
               <button
+                onClick={() => setSidebarOpen(true)}
                 onTouchStart={() => setHamburgerPressed(true)}
-                onTouchEnd={() => {
-                  setHamburgerPressed(false);
-                  setSidebarOpen(true);
-                }}
+                onTouchEnd={() => setHamburgerPressed(false)}
                 onMouseDown={() => setHamburgerPressed(true)}
-                onMouseUp={() => {
-                  setHamburgerPressed(false);
-                  setSidebarOpen(true);
-                }}
+                onMouseUp={() => setHamburgerPressed(false)}
                 onMouseLeave={() => setHamburgerPressed(false)}
                 className={`fixed top-3 left-3 z-20 w-10 h-10 rounded-full
                   backdrop-blur-md shadow-lg
