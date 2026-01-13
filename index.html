@@ -1998,8 +1998,7 @@ ${content}
             <div
               className="flex-1 overflow-hidden relative"
               style={{
-                paddingBottom: (activeTab === 'preview' && !hideUI) ? '44px' : 0,
-                transition: 'padding-bottom 300ms ease-out'
+                paddingBottom: activeTab === 'preview' ? '44px' : 0
               }}
               onTouchStartCapture={handleSidebarSwipeStart}
               onTouchMoveCapture={handleSidebarSwipeMove}
@@ -2147,7 +2146,7 @@ ${content}
                   </div>
                   {/* 下部ツールバー（最大化時・スクロール時は非表示） */}
                   {!isFullscreen && (
-                    <div className={`fixed bottom-0 left-0 right-0 z-20 flex items-center justify-between px-2 py-1.5 transition-transform duration-300 ${hideUI ? 'translate-y-full' : 'translate-y-0'}`} style={{ backgroundColor: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
+                    <div className={`fixed bottom-0 left-0 right-0 z-20 flex items-center justify-between px-2 py-1.5 transition-all duration-300 ${hideUI ? 'opacity-0 translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'}`} style={{ backgroundColor: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}>
                       <div className="flex gap-1">
                         {/* 登録/解除（一番左） */}
                         <button
