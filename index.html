@@ -73,9 +73,8 @@
 
     // IndexedDB ヘルパー（localStorage の代替、容量制限なし）
     const DB_NAME = 'html-preview-db';
-    const DB_VERSION = 2;
+    const DB_VERSION = 1;
     const STORE_NAME = 'library';
-    const STORE_FOLDERS = 'folders';
 
     const openDB = () => {
       return new Promise((resolve, reject) => {
@@ -84,35 +83,8 @@
         request.onsuccess = () => resolve(request.result);
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          const oldVersion = event.oldVersion;
-
-          // v1: library ストア作成
           if (!db.objectStoreNames.contains(STORE_NAME)) {
             db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          }
-
-          // v2: folders ストア作成 + 既存アイテムに folderId 追加
-          if (oldVersion < 2) {
-            if (!db.objectStoreNames.contains(STORE_FOLDERS)) {
-              db.createObjectStore(STORE_FOLDERS, { keyPath: 'id' });
-            }
-            // 既存アイテムに folderId: null を追加（トランザクション完了後に実行）
-            request.transaction.oncomplete = () => {
-              const tx = db.transaction(STORE_NAME, 'readwrite');
-              const store = tx.objectStore(STORE_NAME);
-              const cursorRequest = store.openCursor();
-              cursorRequest.onsuccess = (e) => {
-                const cursor = e.target.result;
-                if (cursor) {
-                  const item = cursor.value;
-                  if (item.folderId === undefined) {
-                    item.folderId = null;
-                    cursor.update(item);
-                  }
-                  cursor.continue();
-                }
-              };
-            };
           }
         };
       });
@@ -142,35 +114,6 @@
           // IDで降順ソート（新しい順）
           const items = request.result.sort((a, b) => b.id - a.id);
           resolve(items);
-        };
-        request.onerror = () => { db.close(); reject(request.error); };
-      });
-    };
-
-    // フォルダ CRUD 関数
-    const saveFoldersToIndexedDB = async (folders) => {
-      const db = await openDB();
-      const tx = db.transaction(STORE_FOLDERS, 'readwrite');
-      const store = tx.objectStore(STORE_FOLDERS);
-      store.clear();
-      folders.forEach(folder => store.put(folder));
-      return new Promise((resolve, reject) => {
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => { db.close(); reject(tx.error); };
-      });
-    };
-
-    const loadFoldersFromIndexedDB = async () => {
-      const db = await openDB();
-      const tx = db.transaction(STORE_FOLDERS, 'readonly');
-      const store = tx.objectStore(STORE_FOLDERS);
-      const request = store.getAll();
-      return new Promise((resolve, reject) => {
-        request.onsuccess = () => {
-          db.close();
-          // orderで昇順ソート
-          const folders = request.result.sort((a, b) => a.order - b.order);
-          resolve(folders);
         };
         request.onerror = () => { db.close(); reject(request.error); };
       });
@@ -233,10 +176,6 @@
       const [theme, setTheme] = useState(() => {
         return localStorage.getItem('html-preview-theme') || 'dark';
       }); // テーマ（dark/light）
-      const [folders, setFolders] = useState([]); // フォルダ一覧
-      const [activeFolderId, setActiveFolderId] = useState(null); // null=全て, 'uncategorized'=未分類, その他=フォルダID
-      const [folderModal, setFolderModal] = useState({ show: false, mode: 'create', folder: null }); // フォルダ作成/編集モーダル
-      const [moveToFolderModal, setMoveToFolderModal] = useState({ show: false, itemIds: [] }); // フォルダ移動モーダル
       const showPasteButton = useMemo(() => {
         const params = new URLSearchParams(window.location.search);
         return params.get('paste') === '1';
@@ -657,14 +596,11 @@
             const migrated = await migrateFromLocalStorage();
             if (migrated) {
               setSavedItems(migrated);
-            } else {
-              // IndexedDBから読み込み
-              const items = await loadFromIndexedDB();
-              setSavedItems(items);
+              return;
             }
-            // フォルダも読み込み
-            const loadedFolders = await loadFoldersFromIndexedDB();
-            setFolders(loadedFolders);
+            // IndexedDBから読み込み
+            const items = await loadFromIndexedDB();
+            setSavedItems(items);
           } catch (e) {
             console.error('Failed to load from IndexedDB:', e);
             // フォールバック: localStorageから読み込み
@@ -812,8 +748,7 @@
             title,
             type,
             code: content,
-            createdAt: new Date().toISOString(),
-            folderId: null
+            createdAt: new Date().toISOString()
           };
           const updated = [newItem, ...savedItems];
           setSavedItems(updated);
@@ -993,9 +928,6 @@ ${svgCode}
       const toggleSelectAll = useCallback(() => {
         // フィルター適用後のアイテム
         const filteredItems = savedItems.filter(item => {
-          // フォルダフィルター
-          if (activeFolderId === 'uncategorized' && item.folderId !== null) return false;
-          if (activeFolderId !== null && activeFolderId !== 'uncategorized' && item.folderId !== activeFolderId) return false;
           if (showStarredOnly && !item.starred) return false;
           if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -1020,14 +952,11 @@ ${svgCode}
           // フィルター内を全選択（既存選択に追加）
           setSelectedItems(prev => new Set([...prev, ...filteredIds]));
         }
-      }, [savedItems, selectedItems, showStarredOnly, searchQuery, activeFolderId]);
+      }, [savedItems, selectedItems, showStarredOnly, searchQuery]);
 
       // フィルター後の全選択状態を計算
       const allFilteredSelected = useMemo(() => {
         const filteredItems = savedItems.filter(item => {
-          // フォルダフィルター
-          if (activeFolderId === 'uncategorized' && item.folderId !== null) return false;
-          if (activeFolderId !== null && activeFolderId !== 'uncategorized' && item.folderId !== activeFolderId) return false;
           if (showStarredOnly && !item.starred) return false;
           if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -1038,7 +967,7 @@ ${svgCode}
         });
         return filteredItems.length > 0 &&
           filteredItems.every(item => selectedItems.has(item.id));
-      }, [savedItems, selectedItems, showStarredOnly, searchQuery, activeFolderId]);
+      }, [savedItems, selectedItems, showStarredOnly, searchQuery]);
 
       // インポート機能（JSON読み込み）
       const handleImport = useCallback((e) => {
@@ -1053,15 +982,10 @@ ${svgCode}
               alert('無効なファイル形式です');
               return;
             }
-            // folderIdがない場合はnullを追加
-            const normalizedImported = imported.map(item => ({
-              ...item,
-              folderId: item.folderId !== undefined ? item.folderId : null
-            }));
             // 既存データとマージ（IDが重複したら上書き）
             const existingIds = new Set(savedItems.map(item => item.id));
-            const newItems = normalizedImported.filter(item => !existingIds.has(item.id));
-            const merged = [...normalizedImported.filter(item => existingIds.has(item.id)), ...savedItems.filter(item => !normalizedImported.find(i => i.id === item.id)), ...newItems];
+            const newItems = imported.filter(item => !existingIds.has(item.id));
+            const merged = [...imported.filter(item => existingIds.has(item.id)), ...savedItems.filter(item => !imported.find(i => i.id === item.id)), ...newItems];
             // IDでソート（新しい順）
             merged.sort((a, b) => b.id - a.id);
             setSavedItems(merged);
@@ -1162,16 +1086,10 @@ ${svgCode}
             const imported = JSON.parse(result.data);
             if (!Array.isArray(imported)) throw new Error('Invalid format');
 
-            // folderIdがない場合はnullを追加
-            const normalizedImported = imported.map(item => ({
-              ...item,
-              folderId: item.folderId !== undefined ? item.folderId : null
-            }));
-
             // 既存データとマージ
             const existingIds = new Set(savedItems.map(item => item.id));
-            const newItems = normalizedImported.filter(item => !existingIds.has(item.id));
-            const merged = [...normalizedImported.filter(item => existingIds.has(item.id)), ...savedItems.filter(item => !normalizedImported.find(i => i.id === item.id)), ...newItems];
+            const newItems = imported.filter(item => !existingIds.has(item.id));
+            const merged = [...imported.filter(item => existingIds.has(item.id)), ...savedItems.filter(item => !imported.find(i => i.id === item.id)), ...newItems];
             merged.sort((a, b) => b.id - a.id);
 
             // IndexedDBへ保存（容量制限なし）
@@ -1895,63 +1813,6 @@ ${content}
                     </button>
                   </div>
                 </div>
-                {/* フォルダタブ */}
-                <div className="px-2 py-1.5 overflow-x-auto" style={{ borderBottom: '1px solid var(--border)', WebkitOverflowScrolling: 'touch' }}>
-                  <div className="flex gap-1.5 min-w-max">
-                    <button
-                      onClick={() => setActiveFolderId(null)}
-                      className="px-3 py-1 text-xs rounded-full transition whitespace-nowrap"
-                      style={{
-                        backgroundColor: activeFolderId === null ? 'var(--accent)' : 'var(--bg-tertiary)',
-                        color: activeFolderId === null ? (theme === 'dark' ? '#000' : '#fff') : 'var(--text-secondary)'
-                      }}
-                    >
-                      全て
-                    </button>
-                    <button
-                      onClick={() => setActiveFolderId('uncategorized')}
-                      className="px-3 py-1 text-xs rounded-full transition whitespace-nowrap"
-                      style={{
-                        backgroundColor: activeFolderId === 'uncategorized' ? 'var(--accent)' : 'var(--bg-tertiary)',
-                        color: activeFolderId === 'uncategorized' ? (theme === 'dark' ? '#000' : '#fff') : 'var(--text-secondary)'
-                      }}
-                    >
-                      未分類
-                    </button>
-                    {folders.map(folder => (
-                      <button
-                        key={folder.id}
-                        onClick={() => setActiveFolderId(folder.id)}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          setFolderModal({ show: true, mode: 'edit', folder });
-                        }}
-                        className="px-3 py-1 text-xs rounded-full transition whitespace-nowrap flex items-center gap-1"
-                        style={{
-                          backgroundColor: activeFolderId === folder.id ? folder.color : 'var(--bg-tertiary)',
-                          color: activeFolderId === folder.id ? '#fff' : 'var(--text-secondary)'
-                        }}
-                      >
-                        <span style={{ color: activeFolderId === folder.id ? '#fff' : folder.color }}>●</span>
-                        {folder.name}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => {
-                        if (folders.length >= 8) {
-                          showToast('フォルダは最大8個までです', 'warning');
-                          return;
-                        }
-                        setFolderModal({ show: true, mode: 'create', folder: null });
-                      }}
-                      className="px-2 py-1 text-xs rounded-full transition"
-                      style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-                      title="フォルダ追加"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
                 {/* ツールバー */}
                 <div className="flex items-center justify-between px-2 py-1.5" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
                   <div className="flex gap-1">
@@ -2027,9 +1888,6 @@ ${content}
                   {(() => {
                     const filtered = savedItems
                       .filter(item => {
-                        // フォルダフィルター
-                        if (activeFolderId === 'uncategorized' && item.folderId !== null) return false;
-                        if (activeFolderId !== null && activeFolderId !== 'uncategorized' && item.folderId !== activeFolderId) return false;
                         if (showStarredOnly && !item.starred) return false;
                         if (!searchQuery) return true;
                         const q = searchQuery.toLowerCase();
@@ -2044,7 +1902,7 @@ ${content}
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                           </svg>
-                          <p className="text-sm">{activeFolderId === 'uncategorized' ? '未分類なし' : activeFolderId && activeFolderId !== null ? 'フォルダは空です' : searchQuery || showStarredOnly ? '該当なし' : 'ライブラリは空です'}</p>
+                          <p className="text-sm">{searchQuery || showStarredOnly ? '該当なし' : 'ライブラリは空です'}</p>
                         </div>
                       );
                     }
@@ -2601,7 +2459,7 @@ ${content}
                   <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
                     <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{actionMenu.title}</p>
                   </div>
-                  <div className="grid grid-cols-5 gap-1 p-2">
+                  <div className="grid grid-cols-4 gap-1 p-2">
                     <button
                       onClick={async () => {
                         try {
@@ -2653,15 +2511,6 @@ ${content}
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                       </svg>
                       <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>送信</span>
-                    </button>
-                    <button
-                      onClick={() => { setMoveToFolderModal({ show: true, itemIds: [actionMenu.id] }); setActionMenu(null); }}
-                      className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                      </svg>
-                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>移動</span>
                     </button>
                     <button
                       onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); }}
@@ -2998,9 +2847,6 @@ ${content}
                   </div>
                 ) : (() => {
                   const filteredItems = savedItems.filter(item => {
-                    // フォルダフィルター
-                    if (activeFolderId === 'uncategorized' && item.folderId !== null) return false;
-                    if (activeFolderId !== null && activeFolderId !== 'uncategorized' && item.folderId !== activeFolderId) return false;
                     if (showStarredOnly && !item.starred) return false;
                     if (!searchQuery.trim()) return true;
                     const query = searchQuery.toLowerCase();
@@ -3010,7 +2856,7 @@ ${content}
                   });
                   return filteredItems.length === 0 ? (
                     <div className="text-center py-8 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      <p>{showStarredOnly ? '★付きの項目なし' : activeFolderId === 'uncategorized' ? '未分類の項目なし' : activeFolderId ? 'このフォルダは空です' : `「${searchQuery}」に一致する項目なし`}</p>
+                      <p>{showStarredOnly ? '★付きの項目なし' : `「${searchQuery}」に一致する項目なし`}</p>
                     </div>
                   ) : (
                     <div className="space-y-1">
@@ -3193,15 +3039,6 @@ ${content}
                     <span style={{ color: 'var(--text-primary)' }}>{actionMenu.starred ? '★を外す' : '★をつける'}</span>
                   </button>
                   <button
-                    onClick={() => { setMoveToFolderModal({ show: true, itemIds: [actionMenu.id] }); setActionMenu(null); }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                    <span style={{ color: 'var(--text-primary)' }}>フォルダに移動</span>
-                  </button>
-                  <button
                     onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); }}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
@@ -3308,182 +3145,6 @@ ${content}
                     </div>
                   </>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* フォルダ移動モーダル */}
-          {moveToFolderModal.show && (
-            <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[250]" onClick={() => setMoveToFolderModal({ show: false, itemIds: [] })}>
-              <div className="rounded-t-2xl sm:rounded-xl w-full sm:max-w-xs overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
-                <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {moveToFolderModal.itemIds.length}件を移動
-                  </p>
-                </div>
-                <div className="py-2 max-h-64 overflow-auto">
-                  <button
-                    onClick={() => {
-                      const updated = savedItems.map(item =>
-                        moveToFolderModal.itemIds.includes(item.id) ? { ...item, folderId: null } : item
-                      );
-                      setSavedItems(updated);
-                      saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
-                      showToast('未分類に移動しました');
-                      setMoveToFolderModal({ show: false, itemIds: [] });
-                    }}
-                    className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
-                  >
-                    <span className="w-4 h-4 rounded-full border-2" style={{ borderColor: 'var(--text-secondary)' }}></span>
-                    <span style={{ color: 'var(--text-primary)' }}>未分類</span>
-                  </button>
-                  {folders.map(folder => (
-                    <button
-                      key={folder.id}
-                      onClick={() => {
-                        const updated = savedItems.map(item =>
-                          moveToFolderModal.itemIds.includes(item.id) ? { ...item, folderId: folder.id } : item
-                        );
-                        setSavedItems(updated);
-                        saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
-                        showToast(`「${folder.name}」に移動しました`);
-                        setMoveToFolderModal({ show: false, itemIds: [] });
-                      }}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
-                    >
-                      <span className="w-4 h-4 rounded-full" style={{ backgroundColor: folder.color }}></span>
-                      <span style={{ color: 'var(--text-primary)' }}>{folder.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="p-2" style={{ borderTop: '1px solid var(--border)' }}>
-                  <button
-                    onClick={() => setMoveToFolderModal({ show: false, itemIds: [] })}
-                    className="w-full py-2 font-medium text-sm active:opacity-70 rounded-lg"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    キャンセル
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* フォルダ作成/編集モーダル */}
-          {folderModal.show && (
-            <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[250]" onClick={() => setFolderModal({ show: false, mode: 'create', folder: null })}>
-              <div className="rounded-t-2xl sm:rounded-xl w-full sm:max-w-xs overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
-                <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {folderModal.mode === 'create' ? 'フォルダ作成' : 'フォルダ編集'}
-                  </p>
-                </div>
-                <div className="p-4">
-                  <input
-                    type="text"
-                    placeholder="フォルダ名"
-                    defaultValue={folderModal.folder?.name || ''}
-                    id="folder-name-input"
-                    autoFocus
-                    className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                  <div className="mt-3">
-                    <p className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>カラー</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'].map(color => (
-                        <button
-                          key={color}
-                          onClick={() => {
-                            document.getElementById('folder-color-input').value = color;
-                            document.querySelectorAll('.folder-color-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-white'));
-                            document.querySelector(`[data-color="${color}"]`).classList.add('ring-2', 'ring-white');
-                          }}
-                          data-color={color}
-                          className={`folder-color-btn w-8 h-8 rounded-full ${folderModal.folder?.color === color || (!folderModal.folder && color === '#3b82f6') ? 'ring-2 ring-white' : ''}`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                    <input type="hidden" id="folder-color-input" defaultValue={folderModal.folder?.color || '#3b82f6'} />
-                  </div>
-                </div>
-                <div className="flex" style={{ borderTop: '1px solid var(--border)' }}>
-                  {folderModal.mode === 'edit' && (
-                    <button
-                      onClick={() => {
-                        setConfirmDialog({
-                          show: true,
-                          message: `「${folderModal.folder.name}」を削除しますか？\n中のアイテムは未分類に移動します`,
-                          onConfirm: () => {
-                            // フォルダ内のアイテムを未分類に
-                            const updated = savedItems.map(item =>
-                              item.folderId === folderModal.folder.id ? { ...item, folderId: null } : item
-                            );
-                            setSavedItems(updated);
-                            saveToIndexedDB(updated).catch(e => console.error('Save error:', e));
-                            // フォルダ削除
-                            const newFolders = folders.filter(f => f.id !== folderModal.folder.id);
-                            setFolders(newFolders);
-                            saveFoldersToIndexedDB(newFolders).catch(e => console.error('Save folders error:', e));
-                            if (activeFolderId === folderModal.folder.id) setActiveFolderId(null);
-                            setFolderModal({ show: false, mode: 'create', folder: null });
-                            showToast('フォルダを削除しました');
-                          }
-                        });
-                      }}
-                      className="flex-1 py-3 font-medium text-sm active:opacity-70 text-red-400"
-                      style={{ borderRight: '1px solid var(--border)' }}
-                    >
-                      削除
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setFolderModal({ show: false, mode: 'create', folder: null })}
-                    className="flex-1 py-3 font-medium text-sm active:opacity-70"
-                    style={{ color: 'var(--text-secondary)', borderRight: '1px solid var(--border)' }}
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={() => {
-                      const name = document.getElementById('folder-name-input').value.trim();
-                      const color = document.getElementById('folder-color-input').value;
-                      if (!name) {
-                        showToast('フォルダ名を入力してください', 'warning');
-                        return;
-                      }
-                      if (folderModal.mode === 'create') {
-                        const newFolder = {
-                          id: crypto.randomUUID(),
-                          name,
-                          color,
-                          order: folders.length,
-                          createdAt: new Date().toISOString()
-                        };
-                        const newFolders = [...folders, newFolder];
-                        setFolders(newFolders);
-                        saveFoldersToIndexedDB(newFolders).catch(e => console.error('Save folders error:', e));
-                        showToast('フォルダを作成しました');
-                      } else {
-                        const newFolders = folders.map(f =>
-                          f.id === folderModal.folder.id ? { ...f, name, color } : f
-                        );
-                        setFolders(newFolders);
-                        saveFoldersToIndexedDB(newFolders).catch(e => console.error('Save folders error:', e));
-                        showToast('フォルダを更新しました');
-                      }
-                      setFolderModal({ show: false, mode: 'create', folder: null });
-                    }}
-                    className="flex-1 py-3 font-medium text-sm active:opacity-70 text-blue-400"
-                  >
-                    {folderModal.mode === 'create' ? '作成' : '保存'}
-                  </button>
-                </div>
               </div>
             </div>
           )}
