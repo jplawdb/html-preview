@@ -1998,7 +1998,8 @@ ${content}
             <div
               className="flex-1 overflow-hidden relative"
               style={{
-                paddingBottom: (activeTab === 'preview' && !hideUI) ? '44px' : 0
+                paddingBottom: (activeTab === 'preview' && !hideUI) ? '44px' : 0,
+                transition: 'padding-bottom 300ms ease-out'
               }}
               onTouchStartCapture={handleSidebarSwipeStart}
               onTouchMoveCapture={handleSidebarSwipeMove}
