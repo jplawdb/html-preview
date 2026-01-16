@@ -146,6 +146,13 @@
 
       const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
       const [leftPanelWidth, setLeftPanelWidth] = useState(50);
+      // デスクトップ3カラム用パネル幅（%）
+      const [codePanelWidth, setCodePanelWidth] = useState(() => {
+        return parseInt(localStorage.getItem('html-preview-code-width') || '30', 10);
+      });
+      const [previewPanelWidth, setPreviewPanelWidth] = useState(() => {
+        return parseInt(localStorage.getItem('html-preview-preview-width') || '40', 10);
+      });
       const [activeTab, setActiveTab] = useState('preview'); // プレビューがメイン画面
       const [sidebarOpen, setSidebarOpen] = useState(false); // サイドバー開閉状態
       const [hamburgerPressed, setHamburgerPressed] = useState(false); // ☰ボタン押下状態
@@ -172,6 +179,7 @@
       const [syncCodeInput, setSyncCodeInput] = useState(''); // 同期コード入力
       const [editingItem, setEditingItem] = useState(null); // 編集中のアイテム { id, title }
       const [actionMenu, setActionMenu] = useState(null); // アクションメニュー用アイテム
+      const [hoveredItem, setHoveredItem] = useState(null); // ライブラリアイテムホバー用
       const [toast, setToast] = useState({ show: false, message: '', type: 'default' }); // トースト通知
       const [theme, setTheme] = useState(() => {
         return localStorage.getItem('html-preview-theme') || 'dark';
@@ -193,6 +201,118 @@
       // サイドバースワイプ用
       const swipeState = useRef({ startX: 0, startY: 0, isSwiping: false, isLocked: false });
       const EDGE_WIDTH = 30; // 左端30pxからサイドバーを開く
+
+      // デスクトップ用リサイザー状態
+      const resizingPanel = useRef(null); // 'code' or 'preview'
+      const resizeStartX = useRef(0);
+      const resizeStartWidth = useRef(0);
+
+      // リサイザードラッグ開始
+      const handleResizeStart = useCallback((panel) => (e) => {
+        e.preventDefault();
+        resizingPanel.current = panel;
+        resizeStartX.current = e.clientX;
+        resizeStartWidth.current = panel === 'code' ? codePanelWidth : previewPanelWidth;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      }, [codePanelWidth, previewPanelWidth]);
+
+      // リサイザードラッグ中
+      useEffect(() => {
+        const handleMouseMove = (e) => {
+          if (!resizingPanel.current) return;
+          const containerWidth = window.innerWidth;
+          const deltaX = e.clientX - resizeStartX.current;
+          const deltaPercent = (deltaX / containerWidth) * 100;
+
+          if (resizingPanel.current === 'code') {
+            const newWidth = Math.min(Math.max(resizeStartWidth.current + deltaPercent, 15), 50);
+            setCodePanelWidth(newWidth);
+          } else if (resizingPanel.current === 'preview') {
+            const newWidth = Math.min(Math.max(resizeStartWidth.current + deltaPercent, 20), 60);
+            setPreviewPanelWidth(newWidth);
+          }
+        };
+
+        const handleMouseUp = () => {
+          if (resizingPanel.current) {
+            // 保存
+            localStorage.setItem('html-preview-code-width', String(Math.round(codePanelWidth)));
+            localStorage.setItem('html-preview-preview-width', String(Math.round(previewPanelWidth)));
+            resizingPanel.current = null;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+          }
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+      }, [codePanelWidth, previewPanelWidth]);
+
+      // グローバルキーボードショートカット
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          // 入力中は無視
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            // Escape以外は無視
+            if (e.key !== 'Escape') return;
+          }
+
+          const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+          const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+          // Escape: フルスクリーン解除 / モーダル閉じ
+          if (e.key === 'Escape') {
+            if (isFullscreen) {
+              setIsFullscreen(false);
+              e.preventDefault();
+            }
+            return;
+          }
+
+          // Ctrl/Cmd + S: 保存（ライブラリに登録）
+          if (modKey && e.key === 's') {
+            e.preventDefault();
+            handleSave();
+            return;
+          }
+
+          // Ctrl/Cmd + O: ファイルを開く
+          if (modKey && e.key === 'o') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+            return;
+          }
+
+          // Ctrl/Cmd + Shift + D: ダウンロード
+          if (modKey && e.shiftKey && e.key === 'D') {
+            e.preventDefault();
+            handleDownload();
+            return;
+          }
+
+          // Ctrl/Cmd + Shift + T: テーマ切替
+          if (modKey && e.shiftKey && e.key === 'T') {
+            e.preventDefault();
+            setTheme(t => t === 'dark' ? 'light' : 'dark');
+            return;
+          }
+
+          // F: フルスクリーン切替（単体キー、入力欄以外）
+          if (e.key === 'f' && !modKey && !e.shiftKey && !e.altKey) {
+            e.preventDefault();
+            setIsFullscreen(prev => !prev);
+            return;
+          }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+      }, [isFullscreen, handleSave, handleDownload]);
 
       // サイドバースワイプ開始（左端からのスワイプでサイドバーを開く）
       const handleSidebarSwipeStart = useCallback((e) => {
@@ -385,6 +505,73 @@
 
         // 同じファイルを再選択可能にする
         e.target.value = '';
+      }, [code]);
+
+      // ドラッグ&ドロップ状態
+      const [isDragOver, setIsDragOver] = useState(false);
+
+      // ドラッグ&ドロップハンドラ
+      const handleDragOver = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(true);
+      }, []);
+
+      const handleDragLeave = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+      }, []);
+
+      const handleDrop = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+
+        const fileName = file.name.toLowerCase();
+        const fileType = file.type;
+
+        // HTMLファイル
+        if (fileName.endsWith('.html') || fileName.endsWith('.htm') || fileType === 'text/html') {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setCode(event.target.result);
+            setLoadedFile({ name: file.name, type: 'HTML' });
+          };
+          reader.readAsText(file);
+        }
+        // SVGファイル
+        else if (fileName.endsWith('.svg') || fileType === 'image/svg+xml') {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setCode(event.target.result);
+            setLoadedFile({ name: file.name, type: 'SVG' });
+          };
+          reader.readAsText(file);
+        }
+        // 画像ファイル
+        else if (fileType.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target.result;
+            const imgTag = `<img src="${base64}" alt="${file.name}" style="max-width:100%;height:auto;">`;
+            setCode(code + (code ? '\n' : '') + imgTag);
+            setLoadedFile({ name: file.name, type: 'IMAGE' });
+          };
+          reader.readAsDataURL(file);
+        }
+        // テキストファイル
+        else if (fileType.startsWith('text/') || fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setCode(event.target.result);
+            setLoadedFile({ name: file.name, type: 'TEXT' });
+          };
+          reader.readAsText(file);
+        }
       }, [code]);
 
       // 長押しでペースト（モバイル用）
@@ -2592,11 +2779,11 @@ ${content}
         <div className="flex flex-col h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
           {/* ヘッダー */}
           {!isFullscreen && (
-          <div className="px-6 py-3 flex items-center justify-between" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
+          <div className="px-4 py-2 flex items-center justify-between" style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
             <div className="flex items-center gap-3">
-              <h1 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>HTML / SVG プレビューツール</h1>
+              <h1 className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>Preview Tool</h1>
               <span
-                className={`px-2 py-0.5 text-xs rounded font-medium ${
+                className={`px-2 py-0.5 text-xs rounded-full font-medium ${
                   currentMode === 'SVG'
                     ? 'bg-purple-600 text-white'
                     : currentMode === 'TEXT'
@@ -2608,60 +2795,122 @@ ${content}
                 {currentMode}
               </span>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded transition"
-              >
-                📂 開く
-              </button>
-              {code && (
+            <div className="flex gap-1 items-center">
+              {/* ファイル操作グループ */}
+              <div className="flex items-center rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                 <button
-                  onClick={handleClear}
-                  className="px-4 py-2 hover:opacity-80 text-sm rounded transition"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 hover:bg-purple-600/20 text-sm transition flex items-center gap-1.5"
+                  style={{ color: 'var(--text-primary)' }}
+                  title="ファイルを開く (Ctrl+O)"
                 >
-                  🗑 クリア
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+                  </svg>
+                  開く
                 </button>
-              )}
+                {code && (
+                  <button
+                    onClick={handleClear}
+                    className="px-3 py-1.5 hover:bg-red-600/20 text-sm transition flex items-center gap-1.5"
+                    style={{ color: 'var(--text-primary)', borderLeft: '1px solid var(--border)' }}
+                    title="クリア"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              <div className="w-px h-5 mx-1" style={{ backgroundColor: 'var(--border)' }}></div>
+
+              {/* アクショングループ */}
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm rounded transition"
+                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
                 style={{
-                  backgroundColor: isAlreadySaved ? '#ef4444' : '#ca8a04',
-                  color: '#fff'
+                  backgroundColor: isAlreadySaved ? 'rgba(239, 68, 68, 0.15)' : 'rgba(202, 138, 4, 0.15)',
+                  color: isAlreadySaved ? '#f87171' : '#fbbf24'
                 }}
+                title="ライブラリに登録 (Ctrl+S)"
               >
-                {isAlreadySaved ? '📚 解除' : '📚 登録'}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={isAlreadySaved ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                {isAlreadySaved ? '解除' : '登録'}
               </button>
+
               {code && (
                 <button
                   onClick={handleDownload}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded transition"
+                  className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                  style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}
+                  title="ダウンロード (Ctrl+Shift+D)"
                 >
-                  ⬇ DL
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  DL
                 </button>
               )}
+
               {currentMode === 'SVG' && (
                 <button
                   onClick={handleDownloadPng}
-                  className="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white text-sm rounded transition"
+                  className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                  style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#f472b6' }}
+                  title="PNG変換"
                 >
-                  🖼 PNG
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  PNG
                 </button>
               )}
+
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm rounded transition"
+                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                style={{ backgroundColor: 'rgba(251, 146, 60, 0.15)', color: '#fb923c' }}
+                title="印刷"
               >
-                🖨 印刷
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
               </button>
+
               <button
                 onClick={handleShare}
                 disabled={isShortening}
-                className={`px-4 py-2 ${isShortening ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-500'} text-white text-sm rounded transition`}
+                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                style={{ backgroundColor: isShortening ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}
+                title="URL共有"
               >
-                {isShortening ? '処理中...' : '🔗 共有'}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                {isShortening ? '...' : '共有'}
+              </button>
+
+              <div className="w-px h-5 mx-1" style={{ backgroundColor: 'var(--border)' }}></div>
+
+              {/* テーマ切替 */}
+              <button
+                onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+                className="p-1.5 rounded-lg hover:opacity-70 transition"
+                style={{ color: 'var(--text-secondary)' }}
+                title={`${theme === 'dark' ? 'ライト' : 'ダーク'}モード (Ctrl+Shift+T)`}
+              >
+                {theme === 'dark' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -2671,23 +2920,43 @@ ${content}
           <div className="flex-1 flex overflow-hidden">
             {/* 左: コードエディタ */}
             {!isFullscreen && (
-            <div className="w-1/3 flex flex-col" style={{ borderRight: '1px solid var(--border)' }}>
+            <div
+              className="flex flex-col relative"
+              style={{ width: `${codePanelWidth}%`, minWidth: '200px' }}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="px-4 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 コード
               </div>
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="flex-1 text-green-400 font-mono text-sm p-4 resize-none focus:outline-none"
-                style={{ backgroundColor: theme === 'dark' ? '#030712' : 'var(--bg-tertiary)', color: theme === 'dark' ? '#4ade80' : '#166534' }}
-                placeholder="ここにHTMLまたはSVGコードを貼り付けてください..."
-                spellCheck={false}
+              <div className="relative flex-1">
+                <textarea
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full h-full text-green-400 font-mono text-sm p-4 resize-none focus:outline-none"
+                  style={{ backgroundColor: theme === 'dark' ? '#030712' : 'var(--bg-tertiary)', color: theme === 'dark' ? '#4ade80' : '#166534' }}
+                  placeholder="ここにHTMLまたはSVGコードを貼り付けてください...&#10;&#10;ファイルをドラッグ&ドロップも可能です"
+                  spellCheck={false}
+                />
+                {/* ドラッグオーバー時のオーバーレイ */}
+                {isDragOver && (
+                  <div className="absolute inset-0 bg-blue-500/20 border-2 border-dashed border-blue-500 rounded flex items-center justify-center z-20">
+                    <div className="text-blue-400 font-medium text-lg">ファイルをドロップ</div>
+                  </div>
+                )}
+              </div>
+              {/* リサイザー（コード↔プレビュー） */}
+              <div
+                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors z-10"
+                style={{ backgroundColor: 'var(--border)' }}
+                onMouseDown={handleResizeStart('code')}
               />
             </div>
             )}
 
             {/* 中央: プレビュー */}
-            <div className={`${isFullscreen ? 'w-full h-full' : 'w-1/3'} flex flex-col relative`} style={isFullscreen ? {} : { borderRight: '1px solid var(--border)' }}>
+            <div className={`${isFullscreen ? 'w-full h-full' : ''} flex flex-col relative`} style={isFullscreen ? {} : { width: `${previewPanelWidth}%`, minWidth: '250px' }}>
               {!isFullscreen && (
               <div className="px-4 py-2 text-sm font-medium flex items-center justify-between" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 <span>プレビュー</span>
@@ -2735,11 +3004,19 @@ ${content}
                   </svg>
                 </button>
               )}
+              {/* リサイザー（プレビュー↔ライブラリ） */}
+              {!isFullscreen && (
+                <div
+                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors z-10"
+                  style={{ backgroundColor: 'var(--border)' }}
+                  onMouseDown={handleResizeStart('preview')}
+                />
+              )}
             </div>
 
             {/* 右: ライブラリ */}
             {!isFullscreen && (
-            <div className="w-1/3 flex flex-col">
+            <div className="flex-1 flex flex-col" style={{ minWidth: '200px' }}>
               <div className="px-4 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 ライブラリ {savedItems.length > 0 && `(${savedItems.length})`}
               </div>
@@ -2860,45 +3137,70 @@ ${content}
                       <p>{showStarredOnly ? '★付きの項目なし' : `「${searchQuery}」に一致する項目なし`}</p>
                     </div>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {filteredItems.map(item => (
                         <div
                           key={item.id}
-                          className={`rounded p-2 flex items-center gap-2 hover:opacity-80 cursor-pointer transition text-sm ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500' : ''}`}
-                          style={{ backgroundColor: 'var(--bg-secondary)' }}
+                          className={`rounded-lg p-3 cursor-pointer transition-all duration-200 ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500' : ''}`}
+                          style={{
+                            backgroundColor: 'var(--bg-secondary)',
+                            boxShadow: hoveredItem?.id === item.id ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+                            transform: hoveredItem?.id === item.id ? 'translateY(-1px)' : 'none'
+                          }}
+                          onMouseEnter={() => !isMobile && setHoveredItem(item)}
+                          onMouseLeave={() => !isMobile && setHoveredItem(null)}
                         >
-                          <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer ${selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : ''}`}
-                            style={!selectedItems.has(item.id) ? { borderColor: 'var(--text-secondary)' } : undefined}
-                            onClick={() => toggleSelectItem(item.id)}
-                          >
-                            {selectedItems.has(item.id) && (
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          <div className="flex items-start gap-2">
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 cursor-pointer mt-0.5 ${selectedItems.has(item.id) ? 'bg-blue-500 border-blue-500' : ''}`}
+                              style={!selectedItems.has(item.id) ? { borderColor: 'var(--text-secondary)' } : undefined}
+                              onClick={(e) => { e.stopPropagation(); toggleSelectItem(item.id); }}
+                            >
+                              {selectedItems.has(item.id) && (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0" onClick={() => handleLoad(item)}>
+                              <div className="flex items-center gap-2 mb-1">
+                                {item.starred && (
+                                  <span className="text-yellow-400 flex-shrink-0 text-sm">★</span>
+                                )}
+                                <span
+                                  className="font-medium truncate"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  {item.title}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                <span
+                                  className="px-1.5 py-0.5 rounded text-xs font-medium"
+                                  style={{
+                                    backgroundColor: item.type === 'svg' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                                    color: item.type === 'svg' ? '#a855f7' : '#3b82f6'
+                                  }}
+                                >
+                                  {item.type?.toUpperCase() || 'HTML'}
+                                </span>
+                                {item.updatedAt && (
+                                  <span>{new Date(item.updatedAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setActionMenu(item); }}
+                              className="p-1.5 hover:bg-white/10 rounded transition flex-shrink-0"
+                              style={{ color: 'var(--text-secondary)' }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="5" r="2"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <circle cx="12" cy="19" r="2"/>
                               </svg>
-                            )}
+                            </button>
                           </div>
-                          {item.starred && (
-                            <span className="text-yellow-400 flex-shrink-0 text-sm">★</span>
-                          )}
-                          <span
-                            className="flex-1 truncate"
-                            style={{ color: 'var(--text-primary)' }}
-                            onClick={() => handleLoad(item)}
-                          >
-                            {item.title}
-                          </span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setActionMenu(item); }}
-                            className="p-1 hover:opacity-70 transition flex-shrink-0"
-                            style={{ color: 'var(--text-secondary)' }}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="5" r="2"/>
-                              <circle cx="12" cy="12" r="2"/>
-                              <circle cx="12" cy="19" r="2"/>
-                            </svg>
-                          </button>
                         </div>
                       ))}
                     </div>
@@ -2908,6 +3210,48 @@ ${content}
             </div>
             )}
           </div>
+
+          {/* ライブラリアイテム ホバープレビュー（デスクトップのみ） */}
+          {!isMobile && hoveredItem && (
+            <div
+              className="fixed z-[150] rounded-lg shadow-2xl overflow-hidden"
+              style={{
+                right: '320px',
+                top: '120px',
+                width: '300px',
+                height: '220px',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                pointerEvents: 'none'
+              }}
+            >
+              <div
+                className="px-3 py-2 text-xs font-medium truncate border-b"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  borderColor: 'var(--border-color)'
+                }}
+              >
+                {hoveredItem.title}
+              </div>
+              <div className="relative" style={{ height: 'calc(100% - 32px)' }}>
+                <iframe
+                  srcDoc={hoveredItem.code}
+                  className="w-full h-full border-0"
+                  style={{
+                    transform: 'scale(0.5)',
+                    transformOrigin: 'top left',
+                    width: '200%',
+                    height: '200%',
+                    backgroundColor: 'white'
+                  }}
+                  sandbox="allow-scripts"
+                  title="Preview"
+                />
+              </div>
+            </div>
+          )}
 
           {/* カスタム確認ダイアログ */}
           {confirmDialog.show && (
