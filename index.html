@@ -59,6 +59,19 @@
       background-color: rgba(255, 255, 255, 0.9) !important;
       box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
     }
+    /* ボタン押下時のスケールアニメーション */
+    .btn-press:active {
+      transform: scale(0.95);
+      transition: transform 0.1s ease-out;
+    }
+    /* 選択アイテムのパルスアニメーション */
+    @keyframes selection-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+    }
+    .item-selected {
+      animation: selection-pulse 2s ease-in-out infinite;
+    }
     </style>
 </head>
 <body>
@@ -179,6 +192,7 @@
       const [syncCodeInput, setSyncCodeInput] = useState(''); // 同期コード入力
       const [editingItem, setEditingItem] = useState(null); // 編集中のアイテム { id, title }
       const [actionMenu, setActionMenu] = useState(null); // アクションメニュー用アイテム
+      const [contextMenuPos, setContextMenuPos] = useState(null); // 右クリックメニュー位置 { x, y }
       const [hoveredItem, setHoveredItem] = useState(null); // ライブラリアイテムホバー用
       const [toast, setToast] = useState({ show: false, message: '', type: 'default' }); // トースト通知
       const [theme, setTheme] = useState(() => {
@@ -484,7 +498,7 @@
               if (navigator.vibrate) navigator.vibrate(50);
             } catch (err) {
               console.error('PDF読み込みエラー:', err);
-              alert('PDFの読み込みに失敗しました');
+              showToast('PDFの読み込みに\n失敗しました', 3000, 'error');
             }
           };
           reader.readAsArrayBuffer(file);
@@ -709,7 +723,20 @@
             </React.Fragment>
           ));
         }
+        // error/successタイプは単純にメッセージ表示（背景色はgetToastStyleで制御）
         return message.split('\n').map((line, i) => i > 0 ? <React.Fragment key={i}><br/>{line}</React.Fragment> : line);
+      };
+
+      // トーストのスタイルをタイプに応じて変更
+      const getToastStyle = (type) => {
+        switch (type) {
+          case 'error':
+            return { backgroundColor: '#dc2626', color: '#fff' };
+          case 'success':
+            return { backgroundColor: '#16a34a', color: '#fff' };
+          default:
+            return { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' };
+        }
       };
 
       // デバウンス処理（大量テキスト対策）
@@ -1166,7 +1193,7 @@ ${svgCode}
           try {
             const imported = JSON.parse(event.target.result);
             if (!Array.isArray(imported)) {
-              alert('無効なファイル形式です');
+              showToast('無効なファイル形式です', 3000, 'error');
               return;
             }
             // 既存データとマージ（IDが重複したら上書き）
@@ -1177,11 +1204,11 @@ ${svgCode}
             merged.sort((a, b) => b.id - a.id);
             setSavedItems(merged);
             saveToIndexedDB(merged).catch(e => console.error('Save error:', e));
-            alert(`インポート完了！（${imported.length}件）`);
+            showToast(`インポート完了！\n（${imported.length}件）`, 2000, 'success');
             if (navigator.vibrate) navigator.vibrate(50);
           } catch (err) {
             console.error('Import error:', err);
-            alert('インポートに失敗しました');
+            showToast('インポートに\n失敗しました', 3000, 'error');
           }
         };
         reader.readAsText(file);
@@ -1283,7 +1310,7 @@ ${svgCode}
             setSavedItems(merged);
             await saveToIndexedDB(merged);
             setSyncModal({ show: false, mode: null, code: null, loading: false, error: null });
-            alert(`インポート完了！（${imported.length}件）`);
+            showToast(`インポート完了！\n（${imported.length}件）`, 2000, 'success');
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
           } else {
             throw new Error(result.error || 'コードが見つかりません');
@@ -1351,7 +1378,7 @@ ${svgCode}
           // デスクトップまたはWeb Share失敗時はクリップボード
           try {
             await navigator.clipboard.writeText(shareUrl);
-            alert(`共有URLをコピーしました！（${sizeInfo}）\nこのURLを送るだけで誰でも同じ内容を見れます。`);
+            showToast(`共有URLをコピーしました！\n（${sizeInfo}）`, 3000, 'success');
           } catch (clipboardError) {
             // クリップボードも失敗した場合、選択可能なテキストで表示
             console.warn('Clipboard API failed:', clipboardError);
@@ -1359,7 +1386,7 @@ ${svgCode}
           }
         } catch (e) {
           console.error('Failed to create share URL:', e);
-          alert('共有URLの作成に失敗しました');
+          showToast('共有URLの作成に\n失敗しました', 3000, 'error');
         }
       }, [code, isMobile]);
 
@@ -1620,7 +1647,7 @@ ${scrollScript}
           const svgEl = svgDoc.querySelector('svg');
 
           if (!svgEl) {
-            alert('SVGの解析に失敗しました');
+            showToast('SVGの解析に\n失敗しました', 3000, 'error');
             return;
           }
 
@@ -1713,13 +1740,13 @@ ${scrollScript}
 
           img.onerror = (e) => {
             console.error('Image load error:', e);
-            alert('PNG変換に失敗しました（画像読み込みエラー）');
+            showToast('PNG変換に失敗しました\n（画像読み込みエラー）', 3000, 'error');
           };
 
           img.src = dataUrl;
         } catch (e) {
           console.error('PNG conversion failed:', e);
-          alert('PNG変換に失敗しました: ' + e.message);
+          showToast('PNG変換に失敗しました', 3000, 'error');
         }
       }, [code, currentMode]);
 
@@ -2655,7 +2682,7 @@ ${content}
                           if (navigator.vibrate) navigator.vibrate(30);
                           setActionMenu(null);
                         } catch (e) {
-                          alert('コピーに失敗しました');
+                          showToast('コピーに失敗しました', 3000, 'error');
                         }
                       }}
                       className="flex flex-col items-center gap-1 p-2 rounded-lg hover:opacity-80 active:opacity-60 transition"
@@ -2760,8 +2787,7 @@ ${content}
               <div
                 className="px-6 py-3 rounded-full shadow-lg"
                 style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
+                  ...getToastStyle(toast.type),
                   textAlign: 'center'
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -2828,7 +2854,7 @@ ${content}
               {/* アクショングループ */}
               <button
                 onClick={handleSave}
-                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5 btn-press"
                 style={{
                   backgroundColor: isAlreadySaved ? 'rgba(239, 68, 68, 0.15)' : 'rgba(202, 138, 4, 0.15)',
                   color: isAlreadySaved ? '#f87171' : '#fbbf24'
@@ -2844,7 +2870,7 @@ ${content}
               {code && (
                 <button
                   onClick={handleDownload}
-                  className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5 btn-press"
                   style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}
                   title="ダウンロード (Ctrl+Shift+D)"
                 >
@@ -2858,7 +2884,7 @@ ${content}
               {currentMode === 'SVG' && (
                 <button
                   onClick={handleDownloadPng}
-                  className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5 btn-press"
                   style={{ backgroundColor: 'rgba(236, 72, 153, 0.15)', color: '#f472b6' }}
                   title="PNG変換"
                 >
@@ -2871,7 +2897,7 @@ ${content}
 
               <button
                 onClick={handlePrint}
-                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5 btn-press"
                 style={{ backgroundColor: 'rgba(251, 146, 60, 0.15)', color: '#fb923c' }}
                 title="印刷"
               >
@@ -2883,7 +2909,7 @@ ${content}
               <button
                 onClick={handleShare}
                 disabled={isShortening}
-                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5"
+                className="px-3 py-1.5 text-sm rounded-lg transition flex items-center gap-1.5 btn-press"
                 style={{ backgroundColor: isShortening ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}
                 title="URL共有"
               >
@@ -2948,10 +2974,12 @@ ${content}
               </div>
               {/* リサイザー（コード↔プレビュー） */}
               <div
-                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors z-10"
-                style={{ backgroundColor: 'var(--border)' }}
+                className="group absolute right-0 top-0 bottom-0 w-3 cursor-col-resize z-10 flex items-center justify-center"
                 onMouseDown={handleResizeStart('code')}
-              />
+              >
+                <div className="absolute inset-0" style={{ backgroundColor: 'var(--border)', width: '1px', left: '50%', transform: 'translateX(-50%)' }} />
+                <div className="w-1 h-8 rounded-full bg-gray-500/40 group-hover:bg-blue-500 group-hover:h-16 transition-all duration-200 z-10" />
+              </div>
             </div>
             )}
 
@@ -2960,15 +2988,27 @@ ${content}
               {!isFullscreen && (
               <div className="px-4 py-2 text-sm font-medium flex items-center justify-between" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)' }}>
                 <span>プレビュー</span>
-                <button
-                  onClick={() => setIsFullscreen(true)}
-                  className="p-1 hover:opacity-70 rounded transition"
-                  title="最大化"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                  {code && (
+                    <button
+                      onClick={sendCurrentCode}
+                      className="px-2 py-1 rounded text-xs font-medium transition hover:opacity-80 active:scale-95 btn-press"
+                      style={{ backgroundColor: '#22c55e', color: '#fff' }}
+                      title="同期コード発行"
+                    >
+                      ↑送信
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsFullscreen(true)}
+                    className="p-1 hover:opacity-70 rounded transition"
+                    title="最大化"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               )}
               <div className="flex-1 overflow-hidden">
@@ -3007,10 +3047,12 @@ ${content}
               {/* リサイザー（プレビュー↔ライブラリ） */}
               {!isFullscreen && (
                 <div
-                  className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 transition-colors z-10"
-                  style={{ backgroundColor: 'var(--border)' }}
+                  className="group absolute right-0 top-0 bottom-0 w-3 cursor-col-resize z-10 flex items-center justify-center"
                   onMouseDown={handleResizeStart('preview')}
-                />
+                >
+                  <div className="absolute inset-0" style={{ backgroundColor: 'var(--border)', width: '1px', left: '50%', transform: 'translateX(-50%)' }} />
+                  <div className="w-1 h-8 rounded-full bg-gray-500/40 group-hover:bg-blue-500 group-hover:h-16 transition-all duration-200 z-10" />
+                </div>
               )}
             </div>
 
@@ -3141,7 +3183,7 @@ ${content}
                       {filteredItems.map(item => (
                         <div
                           key={item.id}
-                          className={`rounded-lg p-3 cursor-pointer transition-all duration-200 ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500' : ''}`}
+                          className={`rounded-lg p-3 cursor-pointer transition-all duration-200 ${selectedItems.has(item.id) ? 'ring-2 ring-blue-500 item-selected' : ''}`}
                           style={{
                             backgroundColor: 'var(--bg-secondary)',
                             boxShadow: hoveredItem?.id === item.id ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
@@ -3149,6 +3191,13 @@ ${content}
                           }}
                           onMouseEnter={() => !isMobile && setHoveredItem(item)}
                           onMouseLeave={() => !isMobile && setHoveredItem(null)}
+                          onContextMenu={(e) => {
+                            if (!isMobile) {
+                              e.preventDefault();
+                              setContextMenuPos({ x: e.clientX, y: e.clientY });
+                              setActionMenu(item);
+                            }
+                          }}
                         >
                           <div className="flex items-start gap-2">
                             <div
@@ -3288,8 +3337,7 @@ ${content}
               <div
                 className="px-6 py-3 rounded-full shadow-lg"
                 style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
+                  ...getToastStyle(toast.type),
                   textAlign: 'center'
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -3342,14 +3390,29 @@ ${content}
 
           {/* アクションメニュー */}
           {actionMenu && (
-            <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[200]" onClick={() => setActionMenu(null)}>
-              <div className="rounded-t-2xl sm:rounded-xl w-full sm:max-w-xs overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
+            <div
+              className="fixed inset-0 z-[200]"
+              style={{ backgroundColor: contextMenuPos ? 'transparent' : 'rgba(0,0,0,0.6)' }}
+              onClick={() => { setActionMenu(null); setContextMenuPos(null); }}
+            >
+              <div
+                className={contextMenuPos ? 'fixed rounded-lg overflow-hidden shadow-2xl' : 'fixed bottom-0 left-0 right-0 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 rounded-t-2xl sm:rounded-xl w-full sm:max-w-xs overflow-hidden shadow-2xl'}
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  ...(contextMenuPos ? {
+                    left: Math.min(contextMenuPos.x, window.innerWidth - 200),
+                    top: Math.min(contextMenuPos.y, window.innerHeight - 300),
+                    width: '200px'
+                  } : {})
+                }}
+                onClick={e => e.stopPropagation()}
+              >
                 <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
                   <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{actionMenu.title}</p>
                 </div>
                 <div className="py-1">
                   <button
-                    onClick={() => { handleLoad(actionMenu); setActionMenu(null); }}
+                    onClick={() => { handleLoad(actionMenu); setActionMenu(null); setContextMenuPos(null); }}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3363,8 +3426,9 @@ ${content}
                         await navigator.clipboard.writeText(actionMenu.code);
                         if (navigator.vibrate) navigator.vibrate(30);
                         setActionMenu(null);
+                        setContextMenuPos(null);
                       } catch (e) {
-                        alert('コピーに失敗しました');
+                        showToast('コピーに失敗しました', 3000, 'error');
                       }
                     }}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
@@ -3375,7 +3439,7 @@ ${content}
                     <span style={{ color: 'var(--text-primary)' }}>コードをコピー</span>
                   </button>
                   <button
-                    onClick={() => { toggleStar(actionMenu.id); setActionMenu(null); }}
+                    onClick={() => { toggleStar(actionMenu.id); setActionMenu(null); setContextMenuPos(null); }}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${actionMenu.starred ? 'text-yellow-400' : ''}`} style={!actionMenu.starred ? { color: 'var(--text-secondary)' } : undefined} fill={actionMenu.starred ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
@@ -3384,7 +3448,7 @@ ${content}
                     <span style={{ color: 'var(--text-primary)' }}>{actionMenu.starred ? '★を外す' : '★をつける'}</span>
                   </button>
                   <button
-                    onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); }}
+                    onClick={() => { setEditingItem({ id: actionMenu.id, title: actionMenu.title }); setActionMenu(null); setContextMenuPos(null); }}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3393,7 +3457,7 @@ ${content}
                     <span style={{ color: 'var(--text-primary)' }}>タイトル編集</span>
                   </button>
                   <button
-                    onClick={() => { handleDelete(actionMenu.id); setActionMenu(null); }}
+                    onClick={() => { handleDelete(actionMenu.id); setActionMenu(null); setContextMenuPos(null); }}
                     className="w-full px-4 py-3 flex items-center gap-3 text-left hover:opacity-80 active:opacity-70 transition"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -3402,6 +3466,7 @@ ${content}
                     <span style={{ color: 'var(--text-primary)' }}>削除</span>
                   </button>
                 </div>
+                {!contextMenuPos && (
                 <div className="p-2" style={{ borderTop: '1px solid var(--border)' }}>
                   <button
                     onClick={() => setActionMenu(null)}
@@ -3411,6 +3476,7 @@ ${content}
                     キャンセル
                   </button>
                 </div>
+                )}
               </div>
             </div>
           )}
@@ -3418,7 +3484,7 @@ ${content}
           {/* 同期モーダル */}
           {syncModal.show && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[300]" onClick={closeSyncModal}>
-              <div className="rounded-xl mx-4 max-w-sm w-full overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
+              <div className="rounded-xl mx-4 max-w-md w-full overflow-hidden shadow-2xl" style={{ backgroundColor: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
                 {syncModal.mode === 'generate' ? (
                   <>
                     <div className="p-6 text-center">
@@ -3435,9 +3501,23 @@ ${content}
                         </div>
                       ) : (
                         <>
-                          <div className="rounded-lg py-6 px-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                            <p className="text-5xl font-mono font-bold tracking-[0.3em]" style={{ color: 'var(--text-primary)' }}>{syncModal.code}</p>
+                          <div className="rounded-lg py-8 px-6" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                            <p className="text-6xl font-mono font-bold tracking-[0.4em]" style={{ color: 'var(--text-primary)' }}>{syncModal.code}</p>
                           </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(syncModal.code);
+                                showToast('コードをコピーしました', 2000, 'success');
+                              } catch (e) {
+                                showToast('コピーに失敗しました', 3000, 'error');
+                              }
+                            }}
+                            className="mt-4 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-80 active:opacity-60 transition"
+                            style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                          >
+                            コードをコピー
+                          </button>
                           <p className="text-xs mt-4" style={{ color: 'var(--text-secondary)' }}>1分間有効・1回限り</p>
                         </>
                       )}
