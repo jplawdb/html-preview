@@ -855,8 +855,14 @@
 
       // SVGタグを抽出（前後のテキストを無視）
       const extractSvgTag = (text) => {
-        const match = text.match(/<svg[\s\S]*<\/svg>/i);
-        return match ? match[0] : text;
+        const startMatch = text.match(/<svg[\s>]/i);
+        if (!startMatch) return text;
+        const startIndex = text.indexOf(startMatch[0]);
+        const tail = text.slice(startIndex);
+        const endMatch = tail.match(/<\/svg\s*>/i);
+        if (!endMatch) return tail;
+        const endIndex = startIndex + endMatch.index + endMatch[0].length;
+        return text.slice(startIndex, endIndex);
       };
 
       // HTMLドキュメントを抽出（前後の会話文を無視）
