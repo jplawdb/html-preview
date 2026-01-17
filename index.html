@@ -865,6 +865,24 @@
         return text.slice(startIndex, endIndex);
       };
 
+      const findFirstHtmlTagIndex = (text) => {
+        const match = text.match(/<([a-zA-Z][\w:-]*)(\s[^>]*)?>/);
+        return match ? text.indexOf(match[0]) : -1;
+      };
+
+      // HTML断片を抽出（前後の会話文を無視）
+      const extractHtmlFragment = (text) => {
+        const startIndex = findFirstHtmlTagIndex(text);
+        if (startIndex === -1) return null;
+        const tail = text.slice(startIndex);
+        const lastClose = tail.toLowerCase().lastIndexOf('</');
+        if (lastClose !== -1) {
+          const closeEnd = tail.indexOf('>', lastClose);
+          if (closeEnd !== -1) return tail.slice(0, closeEnd + 1);
+        }
+        return tail;
+      };
+
       // HTMLドキュメントを抽出（前後の会話文を無視）
       const extractHtmlDocument = (text) => {
         // <!DOCTYPE html> または <html を探す
@@ -918,8 +936,9 @@
         // SVGが含まれているかチェック（前後のテキストを無視）
         const hasSvg = /<svg[\s>]/i.test(trimmed);
         const isSvg = hasSvg && !hasHtmlDoc;
+        const hasHtmlTag = /<([a-zA-Z][\w:-]*)(\s[^>]*)?>/.test(trimmed);
         // loadedFileがあればそのタイプを優先
-        const type = loadedFile?.type || (hasHtmlDoc ? 'HTML' : isSvg ? 'SVG' : trimmed.startsWith('<') ? 'HTML' : 'TEXT');
+        const type = loadedFile?.type || (hasHtmlDoc ? 'HTML' : isSvg ? 'SVG' : hasHtmlTag ? 'HTML' : 'TEXT');
         const content = isSvg ? extractSvgTag(trimmed) : code;
         let title = '';
 
@@ -1410,6 +1429,7 @@ ${svgCode}
         const hasHtmlDoc = /<!DOCTYPE\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
         // SVGが含まれているかチェック
         const hasSvg = /<svg[\s>]/i.test(trimmed);
+        const hasHtmlTag = /<([a-zA-Z][\w:-]*)(\s[^>]*)?>/.test(trimmed);
 
         // Markdown検出（HTML/SVGでない場合）- #や*が2回以上あればMD
         const checkMarkdown = (text) => {
@@ -1437,7 +1457,7 @@ ${svgCode}
         };
 
         // Markdownモード
-        if (!hasHtmlDoc && !hasSvg && !trimmed.startsWith('<') && checkMarkdown(trimmed)) {
+        if (!hasHtmlDoc && !hasSvg && !hasHtmlTag && checkMarkdown(trimmed)) {
           const html = marked.parse(trimmed);
           return `<!DOCTYPE html>
 <html>
@@ -1508,7 +1528,11 @@ ${scrollScript}
         }
 
         // HTMLドキュメントを抽出（前後の会話文を無視）
-        let html = hasHtmlDoc ? extractHtmlDocument(trimmed) || debouncedCode : debouncedCode;
+        let html = hasHtmlDoc
+          ? extractHtmlDocument(trimmed) || debouncedCode
+          : hasHtmlTag
+            ? extractHtmlFragment(trimmed) || debouncedCode
+            : debouncedCode;
 
         // 既存の body タグがある場合は属性を追加
         if (/<body\b/i.test(html)) {
@@ -1587,8 +1611,9 @@ ${scrollScript}
         const hasSvg = /<svg[\s>]/i.test(trimmed);
         if (hasSvg) return 'SVG';
 
-        // その他のHTMLタグで始まる
-        if (trimmed.startsWith('<')) return 'HTML';
+        // その他のHTMLタグが含まれる
+        const hasHtmlTag = /<([a-zA-Z][\w:-]*)(\s[^>]*)?>/.test(trimmed);
+        if (hasHtmlTag) return 'HTML';
 
         // Markdown検出
         if (isMarkdown(trimmed)) return 'MARKDOWN';
