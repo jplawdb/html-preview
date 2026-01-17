@@ -2011,9 +2011,9 @@ ${content}
                     </svg>
                   </button>
                 )}
-                {/* 右下：新規入力ボタン（UI非表示時は隠れる） */}
+                {/* 右下：新規入力/ペーストボタン（UI非表示時は隠れる） */}
                 <button
-                  onClick={handleClear}
+                  onClick={code ? handleClear : handlePaste}
                   className={`fixed bottom-16 right-3 z-20 w-10 h-10 rounded-full
                     backdrop-blur-md shadow-lg
                     flex items-center justify-center
@@ -2023,7 +2023,7 @@ ${content}
                     backgroundColor: 'rgba(107, 114, 128, 0.6)',
                     color: 'rgba(255, 255, 255, 0.8)'
                   }}
-                  title="新規入力"
+                  title={code ? "新規入力" : "ペースト"}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
