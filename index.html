@@ -861,8 +861,8 @@
 
       // HTMLドキュメントを抽出（前後の会話文を無視）
       const extractHtmlDocument = (text) => {
-        // <!DOCTYPE html> または <html を探す
-        const doctypeMatch = text.match(/<!DOCTYPE\s+html[^>]*>/i);
+        // <!DOCTYPE html または <html の開始位置を探す（hasHtmlDocと同じ正規表現を使用）
+        const doctypeMatch = text.match(/<!DOCTYPE\s+html/i);
         const htmlStartMatch = text.match(/<html[\s>]/i);
 
         let startIndex = -1;
@@ -872,16 +872,21 @@
           startIndex = text.indexOf(htmlStartMatch[0]);
         }
 
-        if (startIndex === -1) return null;
+        if (startIndex === -1) {
+          console.log('extractHtmlDocument: startIndex not found');
+          return null;
+        }
 
         // </html> を探す
         const endMatch = text.match(/<\/html\s*>/i);
         if (!endMatch) {
           // </html> がなければ末尾まで
+          console.log('extractHtmlDocument: no </html>, returning from', startIndex);
           return text.slice(startIndex);
         }
 
         const endIndex = text.indexOf(endMatch[0]) + endMatch[0].length;
+        console.log('extractHtmlDocument: extracted from', startIndex, 'to', endIndex);
         return text.slice(startIndex, endIndex);
       };
 
