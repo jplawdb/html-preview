@@ -1417,7 +1417,24 @@ ${svgCode}
 
       // プレビュー用コード（前後の会話文を無視してHTML/SVGを抽出）
       const previewCode = useMemo(() => {
-        const trimmed = debouncedCode.trim();
+        let trimmed = debouncedCode.trim();
+
+        // エスケープされたHTMLを検出してデコード（アプリからのコピペ対応）
+        const hasEscapedHtml = /&lt;[a-zA-Z!\/]/.test(trimmed);
+        if (hasEscapedHtml) {
+          const actualTags = (trimmed.match(/<[a-zA-Z!\/][^>]*>/g) || []).length;
+          const escapedTags = (trimmed.match(/&lt;[a-zA-Z!\/]/g) || []).length;
+          // エスケープされたタグが実際のタグより多ければデコード
+          if (escapedTags > actualTags) {
+            trimmed = trimmed
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/&apos;/g, "'")
+              .replace(/&amp;/g, '&');  // &amp;は最後（他のエンティティに影響しないよう）
+          }
+        }
 
         // スクロール通知用のインラインハンドラ（onscroll属性方式）
         const scrollHandler = "window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop},'*')";
