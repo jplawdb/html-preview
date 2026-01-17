@@ -861,8 +861,8 @@
 
       // HTMLドキュメントを抽出（前後の会話文を無視）
       const extractHtmlDocument = (text) => {
-        // <!DOCTYPE html または <html の開始位置を探す（hasHtmlDocと同じ正規表現を使用）
-        const doctypeMatch = text.match(/<!DOCTYPE\s+html/i);
+        // <!DOCTYPE html> または <html を探す
+        const doctypeMatch = text.match(/<!DOCTYPE\s+html[^>]*>/i);
         const htmlStartMatch = text.match(/<html[\s>]/i);
 
         let startIndex = -1;
@@ -872,21 +872,16 @@
           startIndex = text.indexOf(htmlStartMatch[0]);
         }
 
-        if (startIndex === -1) {
-          console.log('extractHtmlDocument: startIndex not found');
-          return null;
-        }
+        if (startIndex === -1) return null;
 
         // </html> を探す
         const endMatch = text.match(/<\/html\s*>/i);
         if (!endMatch) {
           // </html> がなければ末尾まで
-          console.log('extractHtmlDocument: no </html>, returning from', startIndex);
           return text.slice(startIndex);
         }
 
         const endIndex = text.indexOf(endMatch[0]) + endMatch[0].length;
-        console.log('extractHtmlDocument: extracted from', startIndex, 'to', endIndex);
         return text.slice(startIndex, endIndex);
       };
 
@@ -1409,16 +1404,6 @@ ${svgCode}
         // SVGが含まれているかチェック
         const hasSvg = /<svg[\s>]/i.test(trimmed);
 
-        // DEBUG: 原因特定用ログ
-        console.log('DEBUG previewCode:', {
-          hasHtmlDoc,
-          hasSvg,
-          startsWithLT: trimmed.startsWith('<'),
-          first100: trimmed.substring(0, 100),
-          last100: trimmed.substring(trimmed.length - 100),
-          length: trimmed.length
-        });
-
         // Markdown検出（HTML/SVGでない場合）- #や*が2回以上あればMD
         const checkMarkdown = (text) => {
           // 見出し # が2回以上
@@ -1479,47 +1464,6 @@ ${svgCode}
 </head>
 <body onscroll="${scrollHandler}">
 ${html}
-${scrollScript}
-</body>
-</html>`;
-        }
-
-        // TEXTモード（プレーンテキストを読みやすいデザインで表示）
-        if (!hasHtmlDoc && !hasSvg && !trimmed.startsWith('<') && !checkMarkdown(trimmed) && trimmed) {
-          // HTMLエスケープ
-          const escaped = trimmed
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-          // URL自動リンク化
-          const linked = escaped.replace(
-            /(https?:\/\/[^\s<>&]+)/g,
-            '<a href="$1" target="_blank" rel="noopener">$1</a>'
-          );
-          return `<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-      line-height: 1.9;
-      padding: 24px;
-      max-width: 680px;
-      margin: 0 auto;
-      color: #2c3e50;
-      background: #fefefe;
-      font-size: 16px;
-      letter-spacing: 0.02em;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    a { color: #3498db; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body onscroll="${scrollHandler}">
-${linked}
 ${scrollScript}
 </body>
 </html>`;
@@ -2356,15 +2300,14 @@ ${content}
                         <div style={{ transform: `scale(${zoomLevel * 0.8 / 100})`, transformOrigin: 'top left', width: `${12500 / zoomLevel}%` }} dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }} />
                       </div>
                     ) : currentMode === 'TEXT' ? (
-                      <div className="w-full h-full relative overflow-auto">
-                        <iframe
-                          srcDoc={previewCode}
-                          title="Preview"
-                          className="border-0 bg-white"
-                          sandbox="allow-scripts"
-                          style={{ width: `${12500 / zoomLevel}%`, height: `${12500 / zoomLevel}%`, transform: `scale(${zoomLevel * 0.8 / 100})`, transformOrigin: 'top left' }}
-                        />
-                      </div>
+                      <textarea
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        onScroll={handlePreviewScroll}
+                        className="w-full h-full p-4 resize-none border-0 outline-none font-sans leading-relaxed"
+                        placeholder="テキストを入力または編集..."
+                        style={{ userSelect: 'text', WebkitUserSelect: 'text', fontSize: `${zoomLevel * 0.8}%`, backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                      />
                     ) : (
                       <div className="w-full h-full relative overflow-auto">
                         <iframe
@@ -3075,12 +3018,9 @@ ${content}
                     dangerouslySetInnerHTML={{ __html: extractSvgTag(debouncedCode.trim()) }}
                   />
                 ) : currentMode === 'TEXT' ? (
-                  <iframe
-                    srcDoc={previewCode}
-                    title="Preview"
-                    className="w-full h-full border-0 bg-white"
-                    sandbox="allow-scripts"
-                  />
+                  <div className="w-full h-full overflow-auto p-4" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                    <pre className="whitespace-pre-wrap break-words font-sans text-base leading-relaxed" style={{ userSelect: 'text', WebkitUserSelect: 'text', color: 'var(--text-primary)' }}>{debouncedCode}</pre>
+                  </div>
                 ) : (
                   <iframe
                     srcDoc={previewCode}
@@ -3591,16 +3531,6 @@ ${content}
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<HTMLPreviewer />);
-  </script>
-  <script>
-    // Service Worker登録
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('SW registered:', reg.scope))
-          .catch(err => console.log('SW registration failed:', err));
-      });
-    }
   </script>
 </body>
 </html>
