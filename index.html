@@ -1065,6 +1065,7 @@
       // 読み込み機能
       const handleLoad = useCallback((item) => {
         setCode(item.code);
+        setLoadedFile({ name: item.title, type: item.type });
         setActiveTab('preview');
       }, []);
 
@@ -1229,7 +1230,12 @@ ${svgCode}
             merged.sort((a, b) => b.id - a.id);
             setSavedItems(merged);
             saveToIndexedDB(merged).catch(e => console.error('Save error:', e));
-            showToast(`インポート完了！\n（${imported.length}件）`, 2000, 'success');
+            showToast(`受信しました！\n（${imported.length}件）`, 2000, 'success');
+            if (imported.length > 0) {
+              setCode(imported[0].code);
+              setLoadedFile({ name: imported[0].title, type: imported[0].type });
+              setActiveTab('preview');
+            }
             if (navigator.vibrate) navigator.vibrate(50);
           } catch (err) {
             console.error('Import error:', err);
@@ -1335,7 +1341,12 @@ ${svgCode}
             setSavedItems(merged);
             await saveToIndexedDB(merged);
             setSyncModal({ show: false, mode: null, code: null, loading: false, error: null });
-            showToast(`インポート完了！\n（${imported.length}件）`, 2000, 'success');
+            showToast(`受信しました！\n（${imported.length}件）`, 2000, 'success');
+            if (imported.length > 0) {
+              setCode(imported[0].code);
+              setLoadedFile({ name: imported[0].title, type: imported[0].type });
+              setActiveTab('preview');
+            }
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
           } else {
             throw new Error(result.error || 'コードが見つかりません');
