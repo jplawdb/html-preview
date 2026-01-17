@@ -1108,7 +1108,7 @@ ${svgCode}
             let baseName = sanitizeFilename(item.title || 'untitled');
 
             // SVGの場合はHTMLでラップ
-            if (item.type === 'svg' || (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml'))) {
+            if (item.type?.toLowerCase() === 'svg' || (content.trim().startsWith('<svg') || content.trim().startsWith('<?xml'))) {
               content = wrapSvgInHtml(content, item.title);
             }
 
@@ -3355,8 +3355,8 @@ ${content}
                                 <span
                                   className="px-1.5 py-0.5 rounded text-xs font-medium"
                                   style={{
-                                    backgroundColor: item.type === 'svg' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                                    color: item.type === 'svg' ? '#a855f7' : '#3b82f6'
+                                    backgroundColor: item.type?.toLowerCase() === 'svg' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                                    color: item.type?.toLowerCase() === 'svg' ? '#a855f7' : '#3b82f6'
                                   }}
                                 >
                                   {item.type?.toUpperCase() || 'HTML'}
