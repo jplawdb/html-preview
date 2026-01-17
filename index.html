@@ -874,14 +874,15 @@
 
         if (startIndex === -1) return null;
 
-        // </html> を探す
-        const endMatch = text.match(/<\/html\s*>/i);
+        // </html> を開始位置より後から探す（前文の閉じタグ誤検出を防ぐ）
+        const tail = text.slice(startIndex);
+        const endMatch = tail.match(/<\/html\s*>/i);
         if (!endMatch) {
           // </html> がなければ末尾まで
-          return text.slice(startIndex);
+          return tail;
         }
 
-        const endIndex = text.indexOf(endMatch[0]) + endMatch[0].length;
+        const endIndex = startIndex + endMatch.index + endMatch[0].length;
         return text.slice(startIndex, endIndex);
       };
 
