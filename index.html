@@ -1404,6 +1404,16 @@ ${svgCode}
         // SVGが含まれているかチェック
         const hasSvg = /<svg[\s>]/i.test(trimmed);
 
+        // DEBUG: 原因特定用ログ
+        console.log('DEBUG previewCode:', {
+          hasHtmlDoc,
+          hasSvg,
+          startsWithLT: trimmed.startsWith('<'),
+          first100: trimmed.substring(0, 100),
+          last100: trimmed.substring(trimmed.length - 100),
+          length: trimmed.length
+        });
+
         // Markdown検出（HTML/SVGでない場合）- #や*が2回以上あればMD
         const checkMarkdown = (text) => {
           // 見出し # が2回以上
