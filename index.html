@@ -194,6 +194,8 @@
       const [actionMenu, setActionMenu] = useState(null); // アクションメニュー用アイテム
       const [contextMenuPos, setContextMenuPos] = useState(null); // 右クリックメニュー位置 { x, y }
       const [toast, setToast] = useState({ show: false, message: '', type: 'default' }); // トースト通知
+      const [textSelection, setTextSelection] = useState(null); // テキスト選択情報
+      const [showHighlightMenu, setShowHighlightMenu] = useState(false); // ハイライトメニュー表示
       const [theme, setTheme] = useState(() => {
         return localStorage.getItem('html-preview-theme') || 'dark';
       }); // テーマ（dark/light）
@@ -682,6 +684,23 @@
         });
       }, []);
 
+      // iframeにハイライト適用コマンドを送信
+      const applyHighlight = useCallback((color) => {
+        document.querySelectorAll('iframe').forEach(iframe => {
+          iframe.contentWindow?.postMessage({ type: 'apply-highlight', color }, '*');
+        });
+      }, []);
+
+      // iframeに保存済みハイライトを復元
+      const restoreHighlights = useCallback((highlights) => {
+        if (!highlights || highlights.length === 0) return;
+        setTimeout(() => {
+          document.querySelectorAll('iframe').forEach(iframe => {
+            iframe.contentWindow?.postMessage({ type: 'restore-highlights', highlights }, '*');
+          });
+        }, 300); // iframeロード完了を待つ
+      }, []);
+
       const dismissToast = useCallback(() => {
         if (toastTimerRef.current) {
           clearTimeout(toastTimerRef.current);
@@ -785,7 +804,7 @@
         };
       }, []);
 
-      // iframe内スクロールのpostMessageリスナー
+      // iframe内スクロールのpostMessageリスナー + テキスト選択・ハイライト
       useEffect(() => {
         let lastProcessed = 0;
         const handleMessage = (e) => {
@@ -795,18 +814,54 @@
             lastProcessed = now;
             const currentY = e.data.top || 0;
             const diff = currentY - lastScrollY.current;
-            // スクロールしたら三点メニューを閉じる
+            // スクロールしたら三点メニュー・ハイライトメニューを閉じる
             if (Math.abs(diff) > 20) {
               setShowPreviewMenu(false);
+              setShowHighlightMenu(false);
             }
             if (diff > 20) setHideUI(true);
             else if (diff < -20) setHideUI(false);
             lastScrollY.current = currentY;
           }
+          // テキスト選択検出
+          if (e.data && e.data.type === 'text-selection') {
+            if (e.data.hasSelection) {
+              setTextSelection(e.data);
+              setShowHighlightMenu(true);
+            } else {
+              setTextSelection(null);
+              setShowHighlightMenu(false);
+            }
+          }
+          // ハイライト適用完了
+          if (e.data && e.data.type === 'highlight-applied' && e.data.success) {
+            setShowHighlightMenu(false);
+            setTextSelection(null);
+            // ライブラリアイテムにハイライト情報を保存
+            const currentIdx = savedItems.findIndex(item => item.code === code);
+            if (currentIdx !== -1) {
+              const updated = [...savedItems];
+              updated[currentIdx] = {
+                ...updated[currentIdx],
+                highlights: [...(updated[currentIdx].highlights || []), e.data.highlight]
+              };
+              setSavedItems(updated);
+              saveToIndexedDB(updated);
+            }
+          }
         };
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-      }, []);
+      }, [savedItems, code]);
+
+      // コード変更時に保存済みハイライトを復元
+      useEffect(() => {
+        if (!code) return;
+        const currentItem = savedItems.find(item => item.code === code);
+        if (currentItem?.highlights?.length > 0) {
+          restoreHighlights(currentItem.highlights);
+        }
+      }, [code, savedItems, restoreHighlights]);
 
       // IndexedDBから読み込み（初回はlocalStorageから移行）
       useEffect(() => {
@@ -1457,8 +1512,102 @@ ${svgCode}
         // スクロール通知用のインラインハンドラ（onscroll属性方式）
         const scrollHandler = "window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop},'*')";
 
-        // スクロール通知用のスクリプト（window/documentレベルで検知、子要素スクロールも対応）+ 親からのスクロール指示受信
-        const scrollScript = `<scr` + `ipt>(function(){var send=function(){window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop||0},'*')};window.addEventListener('scroll',send,true);document.addEventListener('scroll',send,true);window.addEventListener('message',function(e){if(e.data&&e.data.type==='scroll-to'){if(e.data.position==='top'){window.scrollTo(0,0)}else if(e.data.position==='bottom'){window.scrollTo(0,document.documentElement.scrollHeight||document.body.scrollHeight)}}})})();</scr` + `ipt>`;
+        // スクロール通知用のスクリプト（window/documentレベルで検知、子要素スクロールも対応）+ 親からのスクロール指示受信 + テキスト選択・ハイライト機能
+        const scrollScript = `<scr` + `ipt>(function(){
+          var send=function(){window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop||0},'*')};
+          window.addEventListener('scroll',send,true);
+          document.addEventListener('scroll',send,true);
+
+          // テキスト選択検出
+          var selTimer=null;
+          document.addEventListener('selectionchange',function(){
+            clearTimeout(selTimer);
+            selTimer=setTimeout(function(){
+              var sel=window.getSelection();
+              if(sel&&sel.rangeCount>0&&sel.toString().trim()){
+                var range=sel.getRangeAt(0);
+                var rect=range.getBoundingClientRect();
+                window.parent.postMessage({type:'text-selection',hasSelection:true,text:sel.toString().substring(0,100),rect:{top:rect.top,left:rect.left,bottom:rect.bottom,right:rect.right,width:rect.width,height:rect.height}},'*');
+              }else{
+                window.parent.postMessage({type:'text-selection',hasSelection:false},'*');
+              }
+            },150);
+          });
+
+          // テキストオフセット計算（ハイライト位置保存用）
+          function getTextOffset(node,offset){
+            var tw=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null,false);
+            var pos=0;
+            while(tw.nextNode()){
+              if(tw.currentNode===node)return pos+offset;
+              pos+=tw.currentNode.textContent.length;
+            }
+            return -1;
+          }
+
+          // オフセットからノード・位置を復元
+          function findNodeAtOffset(targetOffset){
+            var tw=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null,false);
+            var pos=0;
+            while(tw.nextNode()){
+              var len=tw.currentNode.textContent.length;
+              if(pos+len>targetOffset)return{node:tw.currentNode,offset:targetOffset-pos};
+              pos+=len;
+            }
+            return null;
+          }
+
+          window.addEventListener('message',function(e){
+            if(e.data&&e.data.type==='scroll-to'){
+              if(e.data.position==='top'){window.scrollTo(0,0)}
+              else if(e.data.position==='bottom'){window.scrollTo(0,document.documentElement.scrollHeight||document.body.scrollHeight)}
+            }
+            // ハイライト適用
+            if(e.data&&e.data.type==='apply-highlight'){
+              var sel=window.getSelection();
+              if(sel&&sel.rangeCount>0&&sel.toString().trim()){
+                var range=sel.getRangeAt(0);
+                var startOffset=getTextOffset(range.startContainer,range.startOffset);
+                var endOffset=getTextOffset(range.endContainer,range.endOffset);
+                var mark=document.createElement('mark');
+                mark.style.backgroundColor=e.data.color;
+                mark.style.padding='0 2px';
+                mark.style.borderRadius='2px';
+                var hlId='hl-'+Date.now();
+                mark.dataset.highlightId=hlId;
+                try{
+                  range.surroundContents(mark);
+                }catch(ex){
+                  var contents=range.extractContents();
+                  mark.appendChild(contents);
+                  range.insertNode(mark);
+                }
+                sel.removeAllRanges();
+                window.parent.postMessage({type:'highlight-applied',success:true,highlight:{id:hlId,color:e.data.color,text:mark.textContent,startOffset:startOffset,endOffset:endOffset}},'*');
+              }
+            }
+            // ハイライト復元
+            if(e.data&&e.data.type==='restore-highlights'){
+              (e.data.highlights||[]).forEach(function(hl){
+                var start=findNodeAtOffset(hl.startOffset);
+                var end=findNodeAtOffset(hl.endOffset);
+                if(start&&end){
+                  try{
+                    var range=document.createRange();
+                    range.setStart(start.node,start.offset);
+                    range.setEnd(end.node,end.offset);
+                    var mark=document.createElement('mark');
+                    mark.style.backgroundColor=hl.color;
+                    mark.style.padding='0 2px';
+                    mark.style.borderRadius='2px';
+                    mark.dataset.highlightId=hl.id;
+                    range.surroundContents(mark);
+                  }catch(ex){}
+                }
+              });
+            }
+          });
+        })();</scr` + `ipt>`;
 
         // HTMLドキュメントが含まれているかチェック
         const hasHtmlDoc = /<!DOCTYPE\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
@@ -2100,6 +2249,53 @@ ${content}
                       </svg>
                     </button>
                   </>
+                )}
+                {/* ハイライトメニュー（テキスト選択時に表示） */}
+                {showHighlightMenu && textSelection && textSelection.rect && (
+                  <div
+                    className="fixed z-50 flex items-center gap-1.5 px-2 py-1.5 rounded-full backdrop-blur-md shadow-lg"
+                    style={{
+                      top: Math.max(8, textSelection.rect.top * (zoomLevel / 100) - 48),
+                      left: Math.max(8, Math.min(
+                        window.innerWidth - 140,
+                        textSelection.rect.left * (zoomLevel / 100) + (textSelection.rect.width * (zoomLevel / 100)) / 2 - 70
+                      )),
+                      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    }}
+                  >
+                    <button
+                      onClick={() => applyHighlight('#FEFF00')}
+                      onTouchStart={(e) => { e.preventDefault(); applyHighlight('#FEFF00'); }}
+                      className="w-7 h-7 rounded-full border-2 border-white/30 active:scale-90"
+                      style={{ backgroundColor: '#FEFF00', touchAction: 'manipulation' }}
+                      title="黄色"
+                    />
+                    <button
+                      onClick={() => applyHighlight('#FFB6C1')}
+                      onTouchStart={(e) => { e.preventDefault(); applyHighlight('#FFB6C1'); }}
+                      className="w-7 h-7 rounded-full border-2 border-white/30 active:scale-90"
+                      style={{ backgroundColor: '#FFB6C1', touchAction: 'manipulation' }}
+                      title="ピンク"
+                    />
+                    <button
+                      onClick={() => applyHighlight('#90EE90')}
+                      onTouchStart={(e) => { e.preventDefault(); applyHighlight('#90EE90'); }}
+                      className="w-7 h-7 rounded-full border-2 border-white/30 active:scale-90"
+                      style={{ backgroundColor: '#90EE90', touchAction: 'manipulation' }}
+                      title="緑"
+                    />
+                    <button
+                      onClick={() => { setShowHighlightMenu(false); setTextSelection(null); }}
+                      onTouchStart={(e) => { e.preventDefault(); setShowHighlightMenu(false); setTextSelection(null); }}
+                      className="w-7 h-7 rounded-full flex items-center justify-center active:scale-90"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', touchAction: 'manipulation' }}
+                      title="閉じる"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 )}
                 {/* 右下：新規入力/ペーストボタン（UI非表示時は隠れる） */}
                 <button
