@@ -2605,9 +2605,10 @@ ${content}
                         {/* 前へ（＜） */}
                         <button
                           onClick={() => navigateLibrary('prev')}
+                          onTouchEnd={(e) => { e.preventDefault(); navigateLibrary('prev'); }}
                           disabled={savedItems.length === 0}
                           className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 transition active:scale-95"
-                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', touchAction: 'manipulation' }}
                           title="前のアイテム"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2650,9 +2651,10 @@ ${content}
                         {/* 次へ（＞） */}
                         <button
                           onClick={() => navigateLibrary('next')}
+                          onTouchEnd={(e) => { e.preventDefault(); navigateLibrary('next'); }}
                           disabled={savedItems.length === 0}
                           className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 transition active:scale-95"
-                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', touchAction: 'manipulation' }}
                           title="次のアイテム"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
