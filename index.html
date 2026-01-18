@@ -2601,8 +2601,8 @@ ${content}
                         </button>
                       </div>
                       {/* ライブラリナビゲーション + ズームコントロール（中央） */}
-                      <div className="flex items-center gap-1">
-                        {/* 前へ（←） */}
+                      <div className="flex items-center gap-2">
+                        {/* 前へ（＜） */}
                         <button
                           onClick={() => navigateLibrary('prev')}
                           disabled={savedItems.length === 0}
@@ -2611,7 +2611,7 @@ ${content}
                           title="前のアイテム"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                           </svg>
                         </button>
                         {/* ズームコントロール */}
@@ -2647,7 +2647,7 @@ ${content}
                             </svg>
                           </button>
                         </div>
-                        {/* 次へ（→） */}
+                        {/* 次へ（＞） */}
                         <button
                           onClick={() => navigateLibrary('next')}
                           disabled={savedItems.length === 0}
@@ -2656,7 +2656,7 @@ ${content}
                           title="次のアイテム"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </button>
                       </div>
