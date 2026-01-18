@@ -2605,9 +2605,9 @@ ${content}
                         {/* 前へ（＜） */}
                         <button
                           onClick={() => navigateLibrary('prev')}
-                          onTouchEnd={(e) => { e.preventDefault(); navigateLibrary('prev'); }}
+                          onTouchStart={(e) => { e.preventDefault(); navigateLibrary('prev'); }}
                           disabled={savedItems.length === 0}
-                          className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 transition active:scale-95"
+                          className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 active:scale-95"
                           style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', touchAction: 'manipulation' }}
                           title="前のアイテム"
                         >
@@ -2651,9 +2651,9 @@ ${content}
                         {/* 次へ（＞） */}
                         <button
                           onClick={() => navigateLibrary('next')}
-                          onTouchEnd={(e) => { e.preventDefault(); navigateLibrary('next'); }}
+                          onTouchStart={(e) => { e.preventDefault(); navigateLibrary('next'); }}
                           disabled={savedItems.length === 0}
-                          className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 transition active:scale-95"
+                          className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 active:scale-95"
                           style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', touchAction: 'manipulation' }}
                           title="次のアイテム"
                         >
