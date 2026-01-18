@@ -675,6 +675,13 @@
         setHideUI(prev => !prev);
       }, []);
 
+      // iframeを最上部/最下部にスクロール
+      const scrollPreviewTo = useCallback((position) => {
+        document.querySelectorAll('iframe').forEach(iframe => {
+          iframe.contentWindow?.postMessage({ type: 'scroll-to', position }, '*');
+        });
+      }, []);
+
       const dismissToast = useCallback(() => {
         if (toastTimerRef.current) {
           clearTimeout(toastTimerRef.current);
@@ -1450,8 +1457,8 @@ ${svgCode}
         // スクロール通知用のインラインハンドラ（onscroll属性方式）
         const scrollHandler = "window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop},'*')";
 
-        // スクロール通知用のスクリプト（window/documentレベルで検知、子要素スクロールも対応）
-        const scrollScript = `<scr` + `ipt>(function(){var send=function(){window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop||0},'*')};window.addEventListener('scroll',send,true);document.addEventListener('scroll',send,true)})();</scr` + `ipt>`;
+        // スクロール通知用のスクリプト（window/documentレベルで検知、子要素スクロールも対応）+ 親からのスクロール指示受信
+        const scrollScript = `<scr` + `ipt>(function(){var send=function(){window.parent.postMessage({type:'iframe-scroll',top:document.documentElement.scrollTop||document.body.scrollTop||0},'*')};window.addEventListener('scroll',send,true);document.addEventListener('scroll',send,true);window.addEventListener('message',function(e){if(e.data&&e.data.type==='scroll-to'){if(e.data.position==='top'){window.scrollTo(0,0)}else if(e.data.position==='bottom'){window.scrollTo(0,document.documentElement.scrollHeight||document.body.scrollHeight)}}})})();</scr` + `ipt>`;
 
         // HTMLドキュメントが含まれているかチェック
         const hasHtmlDoc = /<!DOCTYPE\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
@@ -2021,6 +2028,47 @@ ${content}
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                   </button>
+                )}
+                {/* 左下：上下スクロールボタン（コードがある時のみ表示） */}
+                {code && (
+                  <>
+                    {/* 上へスクロール（最上部へ） */}
+                    <button
+                      onClick={() => scrollPreviewTo('top')}
+                      className={`fixed bottom-28 left-3 z-20 w-10 h-10 rounded-full
+                        backdrop-blur-md shadow-lg
+                        flex items-center justify-center
+                        active:scale-90 transition-all duration-300
+                        ${hideUI ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100 translate-y-0'}`}
+                      style={{
+                        backgroundColor: 'rgba(107, 114, 128, 0.6)',
+                        color: 'rgba(255, 255, 255, 0.8)'
+                      }}
+                      title="最上部へ"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    {/* 下へスクロール（最下部へ） */}
+                    <button
+                      onClick={() => scrollPreviewTo('bottom')}
+                      className={`fixed bottom-16 left-3 z-20 w-10 h-10 rounded-full
+                        backdrop-blur-md shadow-lg
+                        flex items-center justify-center
+                        active:scale-90 transition-all duration-300
+                        ${hideUI ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100 translate-y-0'}`}
+                      style={{
+                        backgroundColor: 'rgba(107, 114, 128, 0.6)',
+                        color: 'rgba(255, 255, 255, 0.8)'
+                      }}
+                      title="最下部へ"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </>
                 )}
                 {/* 右下：新規入力/ペーストボタン（UI非表示時は隠れる） */}
                 <button
