@@ -1674,6 +1674,37 @@ ${scrollScript}
         return savedItems.some(item => item.code === content);
       }, [savedItems, code]);
 
+      // 現在のコードがライブラリの何番目かを取得
+      const currentLibraryIndex = useMemo(() => {
+        if (!code) return -1;
+        const trimmed = code.trim();
+        const hasHtmlDoc = /<!DOCTYPE\s+html/i.test(trimmed) || /<html[\s>]/i.test(trimmed);
+        const hasSvg = /<svg[\s>]/i.test(trimmed);
+        const isSvg = hasSvg && !hasHtmlDoc;
+        const content = isSvg ? extractSvgTag(trimmed) : code;
+        return savedItems.findIndex(item => item.code === content);
+      }, [savedItems, code]);
+
+      // ライブラリの前後のアイテムに移動
+      const navigateLibrary = useCallback((direction) => {
+        if (savedItems.length === 0) return;
+
+        let newIndex;
+        if (currentLibraryIndex === -1) {
+          // 現在のコードがライブラリにない場合、最初/最後に移動
+          newIndex = direction === 'prev' ? savedItems.length - 1 : 0;
+        } else {
+          newIndex = currentLibraryIndex + (direction === 'prev' ? -1 : 1);
+          // 範囲外の場合はラップアラウンド
+          if (newIndex < 0) newIndex = savedItems.length - 1;
+          if (newIndex >= savedItems.length) newIndex = 0;
+        }
+
+        const item = savedItems[newIndex];
+        setCode(item.code);
+        setLoadedFile(item.title);
+      }, [savedItems, currentLibraryIndex]);
+
       // 現在のモードを判定（コード内のHTML/SVGを検出、前後の会話文を無視）
       const currentMode = useMemo(() => {
         const trimmed = debouncedCode.trim();
@@ -2569,36 +2600,63 @@ ${content}
                           {isAlreadySaved ? '解除' : '登録'}
                         </button>
                       </div>
-                      {/* ズームコントロール（中央） */}
-                      <div className="flex items-center gap-1 rounded-lg px-1" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                      {/* ライブラリナビゲーション + ズームコントロール（中央） */}
+                      <div className="flex items-center gap-1">
+                        {/* 前へ（←） */}
                         <button
-                          onClick={() => setZoomLevel(z => Math.max(50, z - 10))}
-                          disabled={zoomLevel <= 50}
-                          className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
-                          style={{ color: 'var(--text-secondary)' }}
-                          title="縮小"
+                          onClick={() => navigateLibrary('prev')}
+                          disabled={savedItems.length === 0}
+                          className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 transition active:scale-95"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                          title="前のアイテム"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                           </svg>
                         </button>
+                        {/* ズームコントロール */}
+                        <div className="flex items-center gap-1 rounded-lg px-1" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                          <button
+                            onClick={() => setZoomLevel(z => Math.max(50, z - 10))}
+                            disabled={zoomLevel <= 50}
+                            className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
+                            style={{ color: 'var(--text-secondary)' }}
+                            title="縮小"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => setZoomLevel(100)}
+                            className="px-2 py-1 text-xs hover:opacity-70 transition min-w-[3rem]"
+                            style={{ color: 'var(--text-secondary)' }}
+                            title="リセット"
+                          >
+                            {zoomLevel}%
+                          </button>
+                          <button
+                            onClick={() => setZoomLevel(z => Math.min(150, z + 10))}
+                            disabled={zoomLevel >= 150}
+                            className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
+                            style={{ color: 'var(--text-secondary)' }}
+                            title="拡大"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                        </div>
+                        {/* 次へ（→） */}
                         <button
-                          onClick={() => setZoomLevel(100)}
-                          className="px-2 py-1 text-xs hover:opacity-70 transition min-w-[3rem]"
-                          style={{ color: 'var(--text-secondary)' }}
-                          title="リセット"
-                        >
-                          {zoomLevel}%
-                        </button>
-                        <button
-                          onClick={() => setZoomLevel(z => Math.min(150, z + 10))}
-                          disabled={zoomLevel >= 150}
-                          className="p-1.5 hover:opacity-70 disabled:opacity-30 transition active:scale-95"
-                          style={{ color: 'var(--text-secondary)' }}
-                          title="拡大"
+                          onClick={() => navigateLibrary('next')}
+                          disabled={savedItems.length === 0}
+                          className="p-1.5 rounded-lg hover:opacity-70 disabled:opacity-30 transition active:scale-95"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                          title="次のアイテム"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                           </svg>
                         </button>
                       </div>
